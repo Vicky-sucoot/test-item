@@ -156,6 +156,13 @@ table.mini th, table.mini td { text-align: left; padding: 6px 4px; border-bottom
 table.mini td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 table.mini th, table.mini td a { white-space: nowrap; }
 .tablewrap { overflow-x: auto; }
+.subjtabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.subjtabs button { display: grid; gap: 2px; justify-items: center; padding: 10px 6px 8px; min-height: 60px; border: 1px solid var(--line); border-top: 4px solid var(--subj); border-radius: 12px; background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
+.subjtabs button .nm { font-weight: 700; font-size: 15px; }
+.subjtabs button .pc { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.subjtabs button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); border-top-color: var(--subj); box-shadow: inset 0 0 0 1px var(--accent); }
+.subjtabs button[aria-selected="true"] .nm { color: var(--accent); }
+@media (max-width: 520px) { .subjtabs { grid-template-columns: repeat(2, 1fr); } }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 2px; }
 .tile b { font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.2; }
@@ -3074,26 +3081,31 @@ function render() {
   ({ home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAbout }[h] || viewHome)();
 }
 
+const HOME_KEY = LS_KEY + "-home-subject";
+function homeSubject() {
+  if (!ui.homeSubj) { try { ui.homeSubj = localStorage.getItem(HOME_KEY) || ""; } catch (e) {} }
+  return SUBJECTS.find((x) => x.key === ui.homeSubj) || SUBJECTS[0];
+}
+function setHomeSubject(key) { ui.homeSubj = key; try { localStorage.setItem(HOME_KEY, key); } catch (e) {} }
+
 function viewHome() {
   const savedN = Object.keys(state.saved).length;
   const wrongN = Object.keys(state.wrong).length;
   $app.innerHTML = `
     <section style="display:grid;gap:6px">
       <h1>公股銀行四科重點複習</h1>
-      <p class="muted">選一個章節，讀重點、翻記憶卡、做幾題自編練習。</p>
+      <p class="muted">先選科目，再選章節：讀重點、翻記憶卡、做自編練習。</p>
       <div class="row small"><span class="chip">收藏 ${savedN}</span><span class="chip">錯題 ${wrongN}</span><span class="chip pending">待核對 = 涉及法規或制度、尚未比對官方原文</span></div>
     </section>
-    <section class="card">
-      <h2>練習</h2>
-      <p class="small muted">從各章節隨機出題，或集中練習答錯過的題目。</p>
-      <div class="row">
-        <a class="btn primary" href="#practice">跨章節隨機練習</a>
-        <button class="btn" data-act="startwrong" ${wrongN ? "" : "disabled"}>只練錯題（${wrongN} 題）</button>
-      </div>
-    </section>
-    ${SUBJECTS.map((s) => `
-      <section class="card subject" style="--subj:${s.color}">
-        <div class="row"><h2>${s.name}</h2><span class="spacer"></span>${(() => { const sp = subjectProgress(s); return `<span class="small muted">答對 ${sp.ok}／${sp.total}（${sp.total ? Math.round((sp.ok / sp.total) * 100) : 0}%）</span>`; })()}</div>
+    <div class="subjtabs" role="tablist" aria-label="選擇科目">
+      ${SUBJECTS.map((x) => { const sp = subjectProgress(x); const on = x.key === homeSubject().key; return `
+        <button role="tab" id="tab-${x.key}" aria-selected="${on}" aria-controls="subjpanel" data-act="homesubj" data-v="${x.key}" style="--subj:${x.color}">
+          <span class="nm">${x.name}</span><span class="pc">答對 ${sp.total ? Math.round((sp.ok / sp.total) * 100) : 0}%</span>
+        </button>`; }).join("")}
+    </div>
+    ${[homeSubject()].map((s) => `
+      <section class="card subject" id="subjpanel" role="tabpanel" aria-labelledby="tab-${s.key}" style="--subj:${s.color}">
+        <div class="row"><h2>${s.name}</h2><span class="spacer"></span>${(() => { const sp = subjectProgress(s); return `<span class="small muted">答對 ${sp.ok}／${sp.total}（${sp.total ? Math.round((sp.ok / sp.total) * 100) : 0}%）・${s.chapters.length} 章</span>`; })()}</div>
         <div class="chlist">
           ${s.chapters.map((c, i) => { const d = state.done[c.id]; return `
             <a class="chlink" href="#ch-${c.id}" style="--subj:${s.color}">
@@ -3102,6 +3114,14 @@ function viewHome() {
               <span class="arrow">›</span></a>`; }).join("")}
         </div>
       </section>`).join("")}
+    <section class="card">
+      <h2>練習</h2>
+      <p class="small muted">從各章節隨機出題，或集中練習答錯過的題目。</p>
+      <div class="row">
+        <a class="btn primary" href="#practice">跨章節隨機練習</a>
+        <button class="btn" data-act="startwrong" ${wrongN ? "" : "disabled"}>只練錯題（${wrongN} 題）</button>
+      </div>
+    </section>
     <p class="syncnote" data-sync>${syncText()}</p>`;
   window.scrollTo(0, 0);
 }
@@ -3109,6 +3129,7 @@ function viewHome() {
 function viewChapter(id) {
   const ch = CHAPTERS.get(id);
   if (!ch) { location.hash = "home"; return; }
+  setHomeSubject(ch.subject.key);
   const s = ch.subject;
   const tab = ui.tab;
   let body = "";
@@ -3132,7 +3153,7 @@ function viewChapter(id) {
   const idx = s.chapters.indexOf(s.chapters.find((c) => c.id === id));
   const next = s.chapters[idx + 1];
   $app.innerHTML = `
-    <p class="crumb"><a href="#home">科目</a> › ${s.name}</p>
+    <p class="crumb"><a href="#home">科目</a> › <a href="#home">${s.name}</a></p>
     <section style="display:grid;gap:4px;--subj:${s.color}">
       <span class="small" style="color:${s.color};font-weight:700">${s.name}・第 ${ch.no} 章</span>
       <h1>${esc(ch.title)}</h1>
@@ -3680,6 +3701,7 @@ document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
   const act = el.dataset.act;
   const h = (location.hash || "").slice(1);
+  if (act === "homesubj") { setHomeSubject(el.dataset.v); viewHome(); const t = document.getElementById("tab-" + el.dataset.v); if (t) t.focus(); return; }
   if (act === "tab") { ui.tab = el.dataset.v; viewChapter(h.slice(3)); return; }
   if (act === "save") {
     const id = el.dataset.id;
