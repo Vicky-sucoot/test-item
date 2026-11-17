@@ -11,7 +11,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>四科重點複習</title>
+<title>FIT重點複習</title>
 <meta name="description" content="會計學、貨幣銀行學、票據法、銀行法的重點、記憶卡、自編練習題與模擬測驗。">
 <meta name="theme-color" content="#2d5f4a">
 <link rel="manifest" href="manifest.webmanifest">
@@ -19,7 +19,7 @@ const html = `<!doctype html>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="四科複習">
+<meta name="apple-mobile-web-app-title" content="FIT複習">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }

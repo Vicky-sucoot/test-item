@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "公股銀行四科重點複習",
-  "short_name": "四科複習",
+  "name": "FIT重點複習",
+  "short_name": "FIT複習",
   "description": "會計學、貨幣銀行學、票據法、銀行法的重點、記憶卡、自編練習題與模擬測驗（可離線使用）。",
   "lang": "zh-Hant-TW",
   "start_url": "./",
