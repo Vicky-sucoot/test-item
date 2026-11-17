@@ -4,6 +4,7 @@
 
 - 線上版：<https://claude.ai/artifact/MZkFbX7bBsHtAbLwF64Abi>（僅擁有者可開啟，可由頁面「分享」設定）
 - **手機安裝／離線版**：<https://vicky-sucoot.github.io/test-item/>（GitHub Pages，公開網址）
+  - QR code：[install-qr.png](install-qr.png)
   - iPhone／iPad：Safari 開啟 → 分享 →「加入主畫面」
   - Android：Chrome 開啟 → ⋮ →「安裝應用程式」或「加到主畫面」
   - 第一次開啟需連網，之後可離線使用；紀錄只存在該裝置的瀏覽器，不與 claude.ai 版同步
