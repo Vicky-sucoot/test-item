@@ -1,6 +1,6 @@
 # 公股銀行歷屆考題練習網頁 — 規劃書（第 0 階段）
 
-> 狀態：**待確認**。本文件只做規劃，尚未撰寫程式。確認後才進入第 1 階段實作。
+> 狀態：第 0 階段已確認；**第 1 階段已完成**（見第 9 節）。第 9 節的決定優先於前面各節的原始規劃。
 > 撰寫日期：2026-11-17
 
 ---
@@ -297,3 +297,55 @@ source_type,bank,year,exam_name,subject,topic,number,stem,option_a,option_b,opti
 - 合作金庫 111 年度第二次新進人員甄試簡章（台灣金融研訓院受託辦理）：https://careercenter.ntnu.edu.tw/upload/1649982848.pdf
 - 臺灣銀行甄試簡章（註明以臺灣銀行及台灣金融研訓院網站公告為準）：https://cdn.public.com.tw//WebFile/testfile/58e65fc4-b832-469c-9ab1-e8b95190b6a4.pdf
 - 第三方考古題網站範例（非官方，不作為來源）：https://www.3people.com.tw/
+
+---
+
+## 9. 第 1 階段：確認後的決定與實作（2026-11-17）
+
+### 9.1 使用者決定
+| 項目 | 決定 |
+|---|---|
+| 技術 | Next.js＋SQLite。資料庫存取改用 better-sqlite3 直接寫 SQL（不用 Prisma，免下載引擎、本機更單純）；統計圖改用 CSS 長條圖（不用 Recharts） |
+| 銀行 | 第一銀行、合作金庫、臺灣銀行、臺灣土地銀行、華南銀行、兆豐銀行、彰化銀行、臺灣中小企業銀行；不納入中國輸出入銀行 |
+| 年度 | 暫定民國 105～114 年，實際以取得並核對的原卷為準 |
+| 原卷 | 尚未提供；先用自編示範題完成系統，原卷格式見 `docs/SOURCE_FORMAT.md`；不從第三方題庫抓題 |
+| 使用條件 | 由使用者決定是否詢問；題庫保留來源與核對狀態；僅個人本機使用，不公開發布（因此取消「未確認可重製不得發布」的限制，改為在來源檢查表記錄） |
+| 科目分類 | 綜合科目逐題分類到四科；無法判斷者為「待人工分類」 |
+| 主題與解析 | 使用預設章節，可在管理頁修改；解析狀態：尚無／待審核／已審核；無官方答案不猜測 |
+| 錯題本 | 答錯加入；連續答對 2 次標記「已熟悉」，保留紀錄，可繼續複習或移回待複習 |
+| 優先功能 | 分科刷題、錯題複習、收藏、進度統計、PDF／CSV 匯入與人工核對。**模擬考移到第 2 階段**（預設 50 題、60 分鐘） |
+
+### 9.2 第 1 階段頁面
+| 路徑 | 功能 |
+|---|---|
+| `/` | 四科卡片：題數、正確率、已作答、待複習錯題；一鍵隨機練習／複習錯題 |
+| `/questions` | 題庫篩選（來源類型、科目、主題、銀行、年度、甄試名稱、錯題／收藏、關鍵字、合併重複題），開始逐題練習（題數、隨機或依題號、是否即時看答案） |
+| `/practice/[id]` | 逐題作答、題號盤、收藏、交卷；作答即時存檔，可中斷後從統計頁繼續 |
+| `/practice/[id]/result` | 交卷結果、各科正確率、答案、解析（含審核狀態）、來源、重複出處、法規資訊；重練本次錯題 |
+| `/review` | 待複習錯題／已熟悉／收藏三個分頁，可依科目篩選後練習 |
+| `/stats` | 各科與各主題正確率、近日作答、作答紀錄 |
+| `/q/[id]` | 單題完整資訊與個人作答紀錄 |
+| `/admin-login` | 管理密碼登入（`.env.local` 的 `ADMIN_PASSWORD`） |
+| `/admin` | 待處理數量總覽（未核對、解析待審核、待人工分類、缺答案、法規待核對、缺原卷網址） |
+| `/admin/import`、`/admin/import/[id]` | PDF／CSV 匯入；逐題檢查、修正、分類、套用答案文字、勾選已核對、發布 |
+| `/admin/questions`、`/admin/questions/[id]` | 題目編輯、資料核對與解析審核、法條引用、重複題標記、下架 |
+| `/admin/topics` | 主題章節管理 |
+| `/admin/sources` | 來源使用條件檢查表、試卷資料 |
+
+### 9.3 資料表（實作版，定義見 `lib/schema.ts`）
+- `exam_papers` 試卷：source_type、bank、year、exam_name、position、subject_label、exam_date、paper_url、answer_url、announcement_url
+- `questions` 題目（每份試卷每題一筆）：題號、科目＋科目來源（人工／依原卷／系統建議）、主題、選項樣式（(A) 或 (1)）、題幹、選項、official_answer（`C`、`B,C`、`*` 送分、空白＝缺少）、answer_status、answer_note、verify_status（未核對／已核對／不符／不適用）、explanation＋explanation_status、duplicate_group_id、stem_hash、law_at_exam、law_recheck、law_recheck_date、status（已發布／下架）
+- `law_citations`：law_name、article_no、version_note、checked_on、checked_source_url
+- `duplicate_groups`：detect_method（系統偵測文字相同／人工）、confirmed
+- `attempts`、`attempt_items`：作答紀錄（is_correct 為 NULL 表示未作答或無法判分）
+- `wrong_book`：wrong_count、correct_streak、status（待複習／已熟悉）、first_wrong_at、last_attempt_at、familiar_at
+- `bookmarks`、`topics`、`source_checks`、`import_jobs`、`import_items`
+
+### 9.4 尚未完成（第 2 階段以後）
+- 限時模擬考（預設 50 題、60 分鐘，倒數、時間到自動交卷）
+- 掃描影像 PDF 的 OCR
+- 文字「相似」（非完全相同）的重複題比對
+- 法規修正後的批次「需重新核對」標記
+- 題組、圖表題、非選擇題
+- 原卷清單 CSV 直接匯入成試卷資料（目前清單用於整理、提供原卷）
+- 多使用者、雲端同步、部署上線、PWA 離線
