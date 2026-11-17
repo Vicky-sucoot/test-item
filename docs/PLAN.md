@@ -1,6 +1,6 @@
 # 公股銀行歷屆考題練習網頁 — 規劃書（第 0 階段）
 
-> 狀態：第 0 階段已確認；**第 1–3 階段已完成**（見第 9–11 節）。後面章節的決定優先於前面各節的原始規劃。
+> 狀態：第 0 階段已確認；**第 1–3 階段與手機連線／PWA 已完成**（見第 9–12 節）。後面章節的決定優先於前面各節的原始規劃。
 > 撰寫日期：2026-11-17
 
 ---
@@ -402,3 +402,13 @@ source_type,bank,year,exam_name,subject,topic,number,stem,option_a,option_b,opti
 - 依主題或難度比例出題
 - 依「單一試卷」重現原卷題數（目前為多份試卷加總後的比例）
 - 其餘見 9.4、10.3
+
+---
+
+## 12. 手機連線、QR code 與 PWA（2026-11-17）
+
+- 不部署到公開網路（真題使用條件未確認、資料存在本機），因此沒有固定公開網址。
+- `npm run lan`：建置後以 `0.0.0.0` 啟動正式模式，終端機印出區網網址與 QR code；`npm run lan:dev` 為開發模式（`allowedDevOrigins` 自動加入本機區網 IP）。
+- `/connect`：依電腦區網 IP（或目前連線網址）產生 QR code，可輸入其他網址產生 QR code，並提供 iPhone、Android、電腦的安裝說明與「安裝 App」按鈕。
+- PWA：`app/manifest.ts`（名稱、standalone、主題色、圖示、捷徑：題庫／模擬考／錯題複習）、`public/icons/*`、Apple 主畫面設定、`public/sw.js`（只快取圖示與離線提示頁，頁面一律向伺服器取最新內容）、`public/offline.html`。
+- 限制：Service Worker 與完整安裝需要 https 或 localhost；透過區網 http 連線時，iPhone 可加入主畫面，Android 為主畫面捷徑。

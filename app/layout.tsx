@@ -1,13 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { PwaRegister } from "@/components/Pwa";
 
 export const metadata: Metadata = {
   title: "公股銀行考題練習",
   description: "會計學、貨幣銀行學、票據法、銀行法分科練習（本機個人使用）",
+  applicationName: "考題練習",
+  appleWebApp: { capable: true, title: "考題練習", statusBarStyle: "default" },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1f5f8b", viewportFit: "cover" };
 
 const NAV = [
   { href: "/", label: "首頁" },
@@ -16,12 +24,14 @@ const NAV = [
   { href: "/review", label: "錯題・收藏" },
   { href: "/stats", label: "統計" },
   { href: "/admin", label: "管理" },
+  { href: "/connect", label: "手機／App" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-Hant-TW">
       <body className="min-h-screen">
+        <PwaRegister />
         <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur" style={{ borderColor: "var(--line)" }}>
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
             <Link href="/" className="shrink-0 font-bold" style={{ color: "var(--brand)" }}>
