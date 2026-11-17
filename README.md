@@ -29,7 +29,18 @@ npm run dev
 
 開啟 <http://localhost:3000>。第一次啟動會自動建立 `data/app.db`，並載入預設主題章節、來源檢查表，以及 21 題自編示範題（四科各 5 題，另 1 題刻意不給答案，用來展示「缺少官方答案」）；其中 2 題重複收錄在第二份示範題組，用來展示重複標記，所以題庫共 23 筆。
 
-## 手機使用（網址／QR code／安裝 App）
+## 線上示範版（直接開啟，不需安裝）
+
+- 網址：<https://claude.ai/artifact/RdaRuhRwZ595cV7hySucZ3>
+- QR code：[docs/online-qr.png](docs/online-qr.png)
+
+這是單一網頁版本，內容只有 21 題自編示範題，功能包含：分科刷題、錯題本（連續答對 2 次為已熟悉）、收藏、統計、限時模擬考（80 題／90 分、50 題／60 分）。
+- 作答紀錄：登入 claude.ai 時存到你的帳號、跨裝置同步（僅本人可見）；未登入時存在該瀏覽器。
+- 網頁預設只有你本人能開啟；要給別人用，請從頁面的「分享」選單設定。
+- 匯入 PDF／CSV、題目管理、依真題比例出題等功能只在本機完整版。
+- 原始檔：`standalone/app.template.html`。修改示範題後，可用 `standalone/build.mjs` 重新產生 `standalone/index.html`。
+
+## 手機使用本機完整版（網址／QR code／安裝 App）
 
 1. 手機與電腦連上同一個 Wi‑Fi。
 2. 在電腦執行：

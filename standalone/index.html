@@ -1,0 +1,708 @@
+<title>公股銀行考題練習</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 版面：頂部固定導覽列＋單欄內容（最寬 960px），題目卡置中，作答列固定在底部 */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --sunk: #eaeef3;
+  --fg: #18222e;
+  --muted: #5a6878;
+  --line: #d8dee6;
+  --accent: #1d5a8c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3eef8;
+  --good: #1d7a4e;
+  --good-soft: #e3f4ea;
+  --bad: #b3362b;
+  --bad-soft: #fbe9e7;
+  --warn: #8a5a00;
+  --warn-soft: #fdf3dc;
+  --law: #6b4fa0;
+  --law-soft: #f0ebf8;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #17202a; --sunk: #1e2935; --fg: #e6ecf2; --muted: #9aa8b7; --line: #2c3a48;
+    --accent: #6fb0e6; --accent-ink: #0b1622; --accent-soft: #1b3248;
+    --good: #5fcf96; --good-soft: #15302a; --bad: #f08a80; --bad-soft: #3a1f1d;
+    --warn: #e9bf5f; --warn-soft: #362b12; --law: #b9a1ea; --law-soft: #2a2340;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #17202a; --sunk: #1e2935; --fg: #e6ecf2; --muted: #9aa8b7; --line: #2c3a48;
+  --accent: #6fb0e6; --accent-ink: #0b1622; --accent-soft: #1b3248;
+  --good: #5fcf96; --good-soft: #15302a; --bad: #f08a80; --bad-soft: #3a1f1d;
+  --warn: #e9bf5f; --warn-soft: #362b12; --law: #b9a1ea; --law-soft: #2a2340;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.wrap { max-width: 960px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; gap: 12px; padding-block: 8px; }
+.brand { font-weight: 700; color: var(--accent); white-space: nowrap; text-decoration: none; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: none; }
+nav.tabs a { padding: 6px 10px; border-radius: 8px; text-decoration: none; color: var(--fg); white-space: nowrap; font-size: 14px; }
+nav.tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+main { padding-block: 20px 120px; display: grid; gap: 16px; }
+h1 { font-size: 22px; margin: 0; text-wrap: balance; }
+h2 { font-size: 17px; margin: 0; text-wrap: balance; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.grid2 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row.end { justify-content: flex-end; }
+.spacer { flex: 1; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 500; text-decoration: none; color: var(--fg); min-height: 40px; }
+.btn:hover { background: var(--sunk); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.danger { color: var(--bad); border-color: var(--bad); }
+.btn.sm { padding: 5px 10px; min-height: 32px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, nav.tabs a:focus-visible, .opt:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chip { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); background: var(--sunk); white-space: nowrap; }
+.chip.demo { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.chip.good { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.chip.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.chip.law { background: var(--law-soft); color: var(--law); border-color: transparent; }
+.chip.acc { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.notice { padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 13px; }
+.notice.info { background: var(--accent-soft); color: var(--accent); }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--sunk); border-radius: 8px; padding: 8px; text-align: center; }
+.stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+label.field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+select, input[type=number], input[type=search] { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-height: 40px; width: 100%; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.list { display: grid; gap: 8px; }
+.qitem { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; text-align: left; }
+.qitem:hover { border-color: var(--accent); }
+.stem { font-size: 16px; line-height: 1.75; white-space: pre-wrap; }
+.opts { display: grid; gap: 8px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; line-height: 1.6; }
+.opt b { flex: none; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt:disabled { cursor: default; }
+.explain { background: var(--sunk); border-radius: 8px; padding: 12px; display: grid; gap: 6px; }
+.meta { display: grid; grid-template-columns: 7.5em 1fr; gap: 2px 10px; font-size: 13px; }
+.meta dt { color: var(--muted); }
+.meta dd { margin: 0; min-width: 0; }
+.lawbox { border: 1px solid var(--law-soft); background: color-mix(in srgb, var(--law-soft) 55%, var(--surface)); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dock .wrap { display: flex; gap: 8px; align-items: center; padding-block: 10px; }
+.timer { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; font-size: 18px; padding: 4px 10px; border-radius: 8px; background: var(--fg); color: var(--bg); }
+.timer.low { background: var(--bad); color: #fff; }
+.qgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
+.qgrid button { padding: 6px 0; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-variant-numeric: tabular-nums; }
+.qgrid button.done { background: var(--accent-soft); }
+.qgrid button.cur { outline: 2px solid var(--accent); }
+.bar { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 500; }
+td.num { font-variant-numeric: tabular-nums; }
+.big { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.confirm { border: 1px solid var(--warn); background: var(--warn-soft); color: var(--fg); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+.syncnote { font-size: 12px; color: var(--muted); }
+@media (max-width: 520px) { .stats3 .stat b { font-size: 17px; } .big { font-size: 32px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#home">考題練習</a>
+    <nav class="tabs" id="tabs" aria-label="主要頁面">
+      <a href="#home">首頁</a>
+      <a href="#questions">題庫</a>
+      <a href="#exam">模擬考</a>
+      <a href="#review">錯題・收藏</a>
+      <a href="#stats">統計</a>
+      <a href="#about">說明</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app" aria-live="polite"></main>
+<div class="dock" id="dock" hidden><div class="wrap" id="dockInner"></div></div>
+
+<script>
+"use strict";
+// ---------- 題目資料：全部為自編示範題（非歷屆真題；答案為自編參考答案，非官方答案） ----------
+const QUESTIONS = [{"id":1,"s":"ACCOUNTING","t":"會計基本概念與財務報表","q":"【示範】下列何者通常屬於流動資產？","o":["土地","應收帳款","專利權","機器設備"],"a":"B","e":"應收帳款預期於一年或一個營業週期內收現，屬流動資產；土地、機器設備屬不動產、廠房及設備，專利權屬無形資產，皆為非流動資產。"},{"id":2,"s":"ACCOUNTING","t":"存貨","q":"【示範】在物價持續上漲且存貨數量不變的情況下，採用下列何種成本公式，期末存貨金額較高？","o":["先進先出法","加權平均法","兩者相同","資料不足無法判斷"],"a":"A","e":"先進先出法假設先購入者先售出，期末存貨由較晚、單價較高的進貨組成；物價上漲時，其期末存貨金額高於加權平均法。"},{"id":3,"s":"ACCOUNTING","t":"不動產、廠房及設備","q":"【示範】機器成本 $100,000，估計殘值 $10,000，耐用年限 5 年，採直線法提列折舊，每年折舊費用為何？","o":["$18,000","$20,000","$22,000","$10,000"],"a":"A","e":"直線法每年折舊 =（成本 − 殘值）÷ 耐用年限 =（100,000 − 10,000）÷ 5 = 18,000。"},{"id":4,"s":"ACCOUNTING","t":"現金與應收款項","q":"【示範】編製銀行往來調節表時，下列何者應調整「公司帳」上的存款餘額？","o":["在途存款","未兌現支票","銀行代收票據款項，公司尚未入帳","銀行誤記他戶存款"],"a":"C","e":"銀行已代收而公司尚未入帳，屬公司帳應補記的項目；在途存款、未兌現支票及銀行錯誤則調整銀行對帳單餘額。"},{"id":5,"s":"ACCOUNTING","t":"現金流量表","q":"【示範】企業以現金購買機器設備，於現金流量表中應列為下列何種活動？","o":["營業活動","投資活動","籌資活動","不影響現金流量"],"a":"B","e":"取得不動產、廠房及設備之現金支出屬投資活動。"},{"id":6,"s":"MONEY_BANKING","t":"貨幣的功能與定義","q":"【示範】以貨幣衡量各種商品與勞務的價值，屬於貨幣的哪一種功能？","o":["交易媒介","計價單位","價值儲藏","延期支付標準"],"a":"B","e":"以貨幣作為衡量與比較價值的共同尺度，即計價單位（記帳單位）功能。"},{"id":7,"s":"MONEY_BANKING","t":"貨幣供給與存款創造","q":"【示範】若法定準備率為 10%，銀行不保留超額準備，且無現金外流，簡單存款乘數為多少？","o":["5","9","10","11"],"a":"C","e":"簡單存款乘數 = 1 ÷ 法定準備率 = 1 ÷ 0.1 = 10。"},{"id":8,"s":"MONEY_BANKING","t":"中央銀行與貨幣政策","q":"【示範】中央銀行在公開市場買入票券，在其他條件不變下，通常會使下列何者發生？","o":["準備貨幣減少","貨幣供給增加","市場利率上升","銀行超額準備減少"],"a":"B","e":"央行買入票券並支付資金，銀行準備增加，經存款創造使貨幣供給增加，市場利率傾向下降。"},{"id":9,"s":"MONEY_BANKING","t":"利率理論與利率結構","q":"【示範】若名目利率為 5%，預期通貨膨脹率為 2%，依費雪方程式之近似式，預期實質利率約為多少？","o":["2%","3%","5%","7%"],"a":"B","e":"實質利率 ≈ 名目利率 − 預期通貨膨脹率 = 5% − 2% = 3%。"},{"id":10,"s":"MONEY_BANKING","t":"利率理論與利率結構","q":"【示範】依純粹預期理論，若市場預期未來短期利率將上升，殖利率曲線通常呈現何種形狀？","o":["正斜率（右上方傾斜）","負斜率（右下方傾斜）","水平","垂直"],"a":"A","e":"長期利率為預期未來短期利率的平均，預期短期利率上升時，長期利率高於短期利率，曲線呈正斜率。"},{"id":11,"s":"NEGOTIABLE_INSTRUMENTS","t":"通則（票據種類與票據行為）","q":"【示範】依我國票據法，票據的種類為下列何者？","o":["匯票、本票及支票","匯票、本票、支票及信用狀","本票及支票","匯票、支票及倉單"],"a":"A","e":"我國票據法所稱票據為匯票、本票及支票三種。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":12,"s":"NEGOTIABLE_INSTRUMENTS","t":"支票","q":"【示範】依票據法，支票之付款人以下列何者為限？","o":["金融業者","任何自然人","發票人本人","任何公司行號"],"a":"A","e":"支票係委託金融業者於見票時無條件支付，付款人以金融業者為限。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":13,"s":"NEGOTIABLE_INSTRUMENTS","t":"本票","q":"【示範】依票據法，本票發票人所負的責任，與下列何者相同？","o":["匯票發票人","匯票承兌人","匯票背書人","支票付款人"],"a":"B","e":"本票發票人負絕對付款責任，其責任與匯票承兌人相同。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":14,"s":"NEGOTIABLE_INSTRUMENTS","t":"背書","q":"【示範】背書人於票據上記載「禁止轉讓」後，被背書人仍以背書轉讓他人，下列敘述何者正確？","o":["該背書轉讓無效","仍得轉讓，但記載禁止轉讓之背書人，對禁止後再由背書取得票據之人不負責任","發票人因此免除責任","須經付款人同意始得轉讓"],"a":"B","e":"背書人記載禁止轉讓，票據仍得依背書轉讓，但該背書人對禁止後再由背書取得之人不負責任。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":15,"s":"NEGOTIABLE_INSTRUMENTS","t":"支票","q":"【示範】支票正面劃平行線二道者，付款人僅得對下列何者支付票據金額？","o":["金融業者","執票人本人","發票人","任何持票之人"],"a":"A","e":"劃平行線之支票，付款人僅得對金融業者支付票據金額。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":16,"s":"BANKING_ACT","t":"通則與銀行種類","q":"【示範】依銀行法，銀行分為下列哪三種？","o":["商業銀行、專業銀行、信託投資公司","商業銀行、儲蓄銀行、外國銀行","公營銀行、民營銀行、外國銀行","商業銀行、工業銀行、農業銀行"],"a":"A","e":"銀行法將銀行分為商業銀行、專業銀行及信託投資公司三種。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":17,"s":"BANKING_ACT","t":"通則與銀行種類","q":"【示範】銀行法之主管機關為下列何者？","o":["中央銀行","金融監督管理委員會","財政部","經濟部"],"a":"B","e":"銀行法之主管機關為金融監督管理委員會。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":18,"s":"BANKING_ACT","t":"利害關係人交易","q":"【示範】依銀行法，銀行對其負責人原則上不得為下列何種授信（消費者貸款及對政府貸款除外）？","o":["無擔保授信","擔保授信","任何授信","外幣授信"],"a":"A","e":"銀行原則上不得對其負責人、職員、主要股東等利害關係人為無擔保授信，但消費者貸款及對政府貸款不在此限。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":19,"s":"BANKING_ACT","t":"存款規範","q":"【示範】下列何者不屬於銀行法所稱之存款種類？","o":["支票存款","活期存款","定期存款","信用狀"],"a":"D","e":"銀行法所稱存款包括支票存款、活期存款、定期存款等；信用狀為銀行辦理之授信或國際貿易業務工具，非存款。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":20,"s":"BANKING_ACT","t":"資本與財務規範","q":"【示範】銀行各種存款應提存之準備金比率，由下列何者訂定？","o":["中央銀行","金融監督管理委員會","財政部","銀行公會"],"a":"A","e":"銀行存款準備金比率由中央銀行於法定範圍內訂定。（解析草稿未引用條號；條文請以全國法規資料庫現行條文核對後再審核。）"},{"id":21,"s":"ACCOUNTING","t":"權益","q":"【示範・缺少答案】本題用於展示「缺少官方答案」的顯示方式：公司發放股票股利，對權益總額的影響為何？","o":["增加","減少","不變","視情況而定"],"a":null,"e":""}];
+// 示範：同一題出現在第二份示範題組（展示重複題標記）
+const DUPS = { 7: "自編示範題組 B 第 1 題", 12: "自編示範題組 B 第 2 題" };
+const SUBJECTS = ["ACCOUNTING", "MONEY_BANKING", "NEGOTIABLE_INSTRUMENTS", "BANKING_ACT"];
+const SUBJECT_LABEL = { ACCOUNTING: "會計學", MONEY_BANKING: "貨幣銀行學", NEGOTIABLE_INSTRUMENTS: "票據法", BANKING_ACT: "銀行法" };
+const LAW = new Set(["NEGOTIABLE_INSTRUMENTS", "BANKING_ACT"]);
+const KEYS = ["A", "B", "C", "D"];
+const PRESETS = [
+  { key: "ACC_MB", name: "會計學＋貨幣銀行學", subjects: ["ACCOUNTING", "MONEY_BANKING"], count: 80, minutes: 90 },
+  { key: "LAW", name: "票據法＋銀行法", subjects: ["NEGOTIABLE_INSTRUMENTS", "BANKING_ACT"], count: 50, minutes: 60 },
+];
+const FAMILIAR_STREAK = 2;
+const GRACE_MS = 5000;
+const QMAP = new Map(QUESTIONS.map((q) => [q.id, q]));
+const topicsOf = (s) => [...new Set(QUESTIONS.filter((q) => !s || q.s === s).map((q) => q.t))];
+
+// ---------- 狀態與儲存 ----------
+const LS_KEY = "bank-exam-practice-v1";
+const emptyState = () => ({ v: 1, attempts: [], wrong: {}, bookmarks: {}, updatedAt: 0, nextId: 1 });
+let state = emptyState();
+let cloud = { db: null, ref: null, status: "local" }; // local | loading | synced | error
+let saveTimer = null, saving = false, saveAgain = false;
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { const s = JSON.parse(raw); if (s && s.v === 1) state = Object.assign(emptyState(), s); }
+  } catch (e) { /* 無法使用瀏覽器儲存時，只保留於本次開啟 */ }
+}
+function persist() {
+  state.updatedAt = Date.now();
+  if (state.attempts.length > 60) state.attempts = state.attempts.slice(-60);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  if (cloud.ref) { clearTimeout(saveTimer); saveTimer = setTimeout(pushCloud, 1500); }
+}
+async function pushCloud() {
+  if (!cloud.ref) return;
+  if (saving) { saveAgain = true; return; }
+  saving = true;
+  try {
+    await cloud.ref.set({ json: JSON.stringify(state), updatedAt: state.updatedAt });
+    cloud.status = "synced";
+  } catch (e) { cloud.status = "error"; }
+  saving = false;
+  renderSync();
+  if (saveAgain) { saveAgain = false; pushCloud(); }
+}
+async function initCloud() {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    cloud.status = "loading"; renderSync();
+    const ref = db.collection("data/users/" + id).doc("progress");
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000));
+    const snap = await Promise.race([ref.get(), timeout]);
+    cloud.ref = ref;
+    if (snap.exists) {
+      const d = snap.data();
+      if (d && typeof d.json === "string" && (d.updatedAt || 0) > state.updatedAt) {
+        const s = JSON.parse(d.json);
+        if (s && s.v === 1) {
+          state = Object.assign(emptyState(), s);
+          try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+          cloud.status = "synced"; renderSync(); render();
+          return;
+        }
+      }
+    }
+    cloud.status = "synced";
+    if (state.updatedAt && (!snap.exists || ((snap.data() || {}).updatedAt || 0) < state.updatedAt)) pushCloud();
+    renderSync();
+  } catch (e) { cloud.status = "error"; renderSync(); }
+}
+function syncText() {
+  return {
+    local: "作答紀錄儲存在這個瀏覽器。登入 claude.ai 開啟時，會改存到你的帳號並跨裝置同步。",
+    loading: "正在讀取你帳號中的作答紀錄…",
+    synced: "作答紀錄已同步到你的 claude.ai 帳號（僅你本人可見）。",
+    error: "暫時無法同步到帳號，紀錄先保存在這個瀏覽器。",
+  }[cloud.status];
+}
+function renderSync() { document.querySelectorAll("[data-sync]").forEach((el) => (el.textContent = syncText())); }
+
+// ---------- 判分與錯題本 ----------
+function grade(q, chosen) {
+  if (!q.a) return null; // 缺少答案：不判分
+  if (!chosen) return false;
+  return chosen === q.a;
+}
+function applyWrong(qid, ok, at) {
+  const w = state.wrong[qid];
+  if (!ok) {
+    state.wrong[qid] = { n: (w ? w.n : 0) + 1, streak: 0, status: "ACTIVE", first: w ? w.first : at, last: at };
+  } else if (w) {
+    w.streak += 1; w.last = at;
+    if (w.streak >= FAMILIAR_STREAK && w.status !== "FAMILIAR") { w.status = "FAMILIAR"; w.familiarAt = at; }
+  }
+}
+
+// ---------- 小工具 ----------
+const $app = document.getElementById("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (c, t) => (t ? Math.round((c / t) * 100) + "%" : "—");
+const fmtTime = (ts) => { const d = new Date(ts); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const fmtClock = (sec) => { const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60, p = (n) => String(n).padStart(2, "0"); return h ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`; };
+const fmtDur = (sec) => `${Math.floor(sec / 60)} 分 ${String(sec % 60).padStart(2, "0")} 秒`;
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function apportion(total, weights) {
+  const n = weights.length; if (!n || total <= 0) return weights.map(() => 0);
+  const sum = weights.reduce((a, b) => a + b, 0); const w = sum > 0 ? weights : weights.map(() => 1); const s = w.reduce((a, b) => a + b, 0);
+  const exact = w.map((x) => (total * x) / s); const out = exact.map(Math.floor); let left = total - out.reduce((a, b) => a + b, 0);
+  const order = exact.map((x, i) => ({ i, r: x - Math.floor(x) })).sort((a, b) => b.r - a.r || a.i - b.i);
+  for (let k = 0; left > 0; k = (k + 1) % n, left--) out[order[k].i]++;
+  return out;
+}
+function allocate(count, available) {
+  const out = available.map(() => 0); let remaining = Math.min(count, available.reduce((a, b) => a + b, 0));
+  while (remaining > 0) {
+    const spare = available.map((a, i) => (out[i] < a ? i : -1)).filter((i) => i >= 0);
+    const share = apportion(remaining, spare.map(() => 1)); let moved = 0;
+    spare.forEach((i, k) => { const t = Math.min(share[k], available[i] - out[i]); out[i] += t; moved += t; });
+    remaining -= moved; if (!moved) break;
+  }
+  return out;
+}
+function attemptById(id) { return state.attempts.find((a) => a.id === id); }
+function paperLine(q) { return `自編示範題組 A 第 ${q.id} 題`; }
+
+// ---------- 建立練習 ----------
+function filterQuestions(f) {
+  return QUESTIONS.filter((q) => {
+    if (f.subject && q.s !== f.subject) return false;
+    if (f.topic && q.t !== f.topic) return false;
+    const w = state.wrong[q.id];
+    if (f.range === "wrong" && !(w && w.status === "ACTIVE")) return false;
+    if (f.range === "familiar" && !(w && w.status === "FAMILIAR")) return false;
+    if (f.range === "bookmark" && !state.bookmarks[q.id]) return false;
+    if (f.kw && !(q.q + q.o.join("")).includes(f.kw)) return false;
+    return true;
+  });
+}
+function startAttempt({ qids, title, mode, instant, limitSec, plan }) {
+  if (!qids.length) return;
+  const a = { id: state.nextId++, mode, title, qids, answers: {}, instant: !!instant, startedAt: Date.now(), cur: 0 };
+  if (mode === "EXAM") { a.limitSec = limitSec; a.deadline = Date.now() + limitSec * 1000; a.plan = plan; }
+  state.attempts.push(a); persist();
+  location.hash = "quiz-" + a.id;
+}
+function submitAttempt(a, reason) {
+  if (a.submittedAt) return;
+  const at = Date.now(); a.results = {}; let answered = 0, gradable = 0, correct = 0;
+  for (const qid of a.qids) {
+    const q = QMAP.get(qid); const ch = a.answers[qid];
+    if (ch) answered++;
+    let g = ch ? grade(q, ch) : null;
+    const unansweredExam = a.mode === "EXAM" && !ch && q.a;
+    if (unansweredExam) g = false;
+    a.results[qid] = g;
+    if (g !== null) { gradable++; if (g) correct++; if (!unansweredExam) applyWrong(qid, g, at); }
+  }
+  Object.assign(a, { submittedAt: at, answered, gradable, correct, reason: a.mode === "EXAM" ? reason : null });
+  persist();
+}
+function finalizeExpired() {
+  let changed = false;
+  for (const a of state.attempts) if (a.mode === "EXAM" && !a.submittedAt && Date.now() > a.deadline + GRACE_MS) { submitAttempt(a, "TIMEOUT"); changed = true; }
+  return changed;
+}
+
+// ---------- 畫面 ----------
+let tick = null;
+let ui = { gridOpen: false, confirmSubmit: false, confirmReset: false, resultView: "all", reviewTab: "wrong", filters: { subject: "", topic: "", range: "", kw: "" } };
+try { const f = JSON.parse(localStorage.getItem(LS_KEY + "-filters") || "null"); if (f) ui.filters = Object.assign(ui.filters, f); } catch (e) {}
+
+function setDock(html) { const d = document.getElementById("dock"); document.getElementById("dockInner").innerHTML = html || ""; d.hidden = !html; }
+function currentView() { const h = (location.hash || "#home").slice(1); return h || "home"; }
+
+function render() {
+  clearInterval(tick); tick = null;
+  finalizeExpired();
+  const v = currentView();
+  const base = v.split("-")[0];
+  document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + (base === "quiz" || base === "result" ? "" : base) ? "page" : "false"));
+  setDock("");
+  if (base === "quiz") return viewQuiz(Number(v.split("-")[1]));
+  if (base === "result") return viewResult(Number(v.split("-")[1]));
+  ({ home: viewHome, questions: viewQuestions, exam: viewExam, review: viewReview, stats: viewStats, about: viewAbout }[base] || viewHome)();
+  window.scrollTo(0, 0);
+}
+
+function subjectStats(s) {
+  let answered = 0, gradable = 0, correct = 0;
+  for (const a of state.attempts) if (a.submittedAt) for (const qid of a.qids) {
+    const q = QMAP.get(qid); if (q.s !== s) continue;
+    if (a.answers[qid]) answered++;
+    const r = a.results[qid]; if (r !== null && r !== undefined) { gradable++; if (r) correct++; }
+  }
+  const wrong = QUESTIONS.filter((q) => q.s === s && state.wrong[q.id] && state.wrong[q.id].status === "ACTIVE").length;
+  return { answered, gradable, correct, wrong, count: QUESTIONS.filter((q) => q.s === s).length };
+}
+
+function viewHome() {
+  const wrongAll = Object.values(state.wrong).filter((w) => w.status === "ACTIVE").length;
+  const marks = Object.keys(state.bookmarks).length;
+  $app.innerHTML = `
+    <section class="grid" style="display:grid;gap:8px">
+      <h1>分科刷題</h1>
+      <p class="muted">會計學・貨幣銀行學・票據法・銀行法</p>
+      <p class="notice">目前題庫為 <b>21 題自編示範題</b>（非歷屆真題；答案為自編參考答案，非官方答案）。真題請在本機完整版的管理頁匯入並核對。</p>
+    </section>
+    <section class="grid2">
+      ${SUBJECTS.map((s) => { const st = subjectStats(s); return `
+        <div class="card">
+          <div class="row"><h2>${SUBJECT_LABEL[s]}</h2><span class="spacer"></span><span class="muted small">${st.count} 題</span></div>
+          <div class="stats3">
+            <div class="stat"><b>${pct(st.correct, st.gradable)}</b><span>正確率</span></div>
+            <div class="stat"><b>${st.answered}</b><span>已作答</span></div>
+            <div class="stat"><b>${st.wrong}</b><span>待複習錯題</span></div>
+          </div>
+          <div class="row">
+            <button class="btn primary" data-act="quick" data-s="${s}">隨機練習 10 題</button>
+            ${st.wrong ? `<button class="btn" data-act="quickwrong" data-s="${s}">複習錯題</button>` : ""}
+          </div>
+        </div>`; }).join("")}
+    </section>
+    <section class="card">
+      <div class="row"><div style="min-width:0;flex:1"><h2>限時模擬考</h2><p class="muted small">會計學＋貨幣銀行學 80 題／90 分鐘；票據法＋銀行法 50 題／60 分鐘</p></div><a class="btn primary" href="#exam">前往模擬考</a></div>
+    </section>
+    <section class="grid2">
+      <a class="card" href="#review" style="text-decoration:none;color:inherit"><div class="big">${wrongAll}</div><span class="muted">待複習錯題</span></a>
+      <a class="card" href="#review" data-act="tabmarks" style="text-decoration:none;color:inherit"><div class="big">${marks}</div><span class="muted">收藏題目</span></a>
+    </section>
+    <p class="syncnote" data-sync>${syncText()}</p>`;
+}
+
+function viewQuestions() {
+  const f = ui.filters;
+  const list = filterQuestions(f);
+  const topics = topicsOf(f.subject);
+  $app.innerHTML = `
+    <h1>題庫</h1>
+    <section class="card">
+      <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <label class="field">科目<select id="f-subject"><option value="">全部科目</option>${SUBJECTS.map((s) => `<option value="${s}" ${f.subject === s ? "selected" : ""}>${SUBJECT_LABEL[s]}</option>`).join("")}</select></label>
+        <label class="field">主題<select id="f-topic"><option value="">全部主題</option>${topics.map((t) => `<option ${f.topic === t ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+        <label class="field">範圍<select id="f-range">
+          <option value="">全部</option><option value="wrong" ${f.range === "wrong" ? "selected" : ""}>待複習錯題</option>
+          <option value="familiar" ${f.range === "familiar" ? "selected" : ""}>已熟悉</option><option value="bookmark" ${f.range === "bookmark" ? "selected" : ""}>收藏</option></select></label>
+        <label class="field">關鍵字<input id="f-kw" type="search" value="${esc(f.kw)}" placeholder="題幹或選項"></label>
+      </div>
+      <p class="small muted">來源類型：自編示範題（線上版未收錄銀行甄試題與 FIT 參考試題）。銀行、年度、甄試名稱篩選請使用本機完整版。</p>
+      <div class="row">
+        <label class="field" style="width:96px">題數<input id="p-count" type="number" min="1" max="${list.length || 1}" value="${Math.min(10, list.length || 1)}"></label>
+        <label class="field" style="width:140px">順序<select id="p-order"><option value="random">隨機</option><option value="seq">依題號</option></select></label>
+        <label class="check" style="align-self:end;padding-bottom:8px"><input id="p-instant" type="checkbox"> 每題作答後立即看答案</label>
+        <span class="spacer"></span>
+        <button class="btn primary" data-act="startfilter" ${list.length ? "" : "disabled"} style="align-self:end">開始練習（共 ${list.length} 題可選）</button>
+      </div>
+    </section>
+    <section class="list">
+      ${list.map((q) => { const w = state.wrong[q.id]; return `
+        <button class="qitem" data-act="peek" data-id="${q.id}">
+          <span class="row"><span class="chip">${SUBJECT_LABEL[q.s]}</span><span class="chip">${esc(q.t)}</span><span class="chip demo">示範題</span>
+            ${DUPS[q.id] ? `<span class="chip law">重複 ×2</span>` : ""}${q.a ? "" : `<span class="chip bad">缺少答案</span>`}
+            ${state.bookmarks[q.id] ? `<span class="chip acc">★ 收藏</span>` : ""}${w ? `<span class="chip ${w.status === "ACTIVE" ? "bad" : "good"}">${w.status === "ACTIVE" ? "錯題待複習" : "已熟悉"}</span>` : ""}</span>
+          <span>${esc(q.q)}</span>
+        </button>`; }).join("") || `<p class="card muted">沒有符合條件的題目。</p>`}
+    </section>`;
+  const saveF = () => { try { localStorage.setItem(LS_KEY + "-filters", JSON.stringify(ui.filters)); } catch (e) {} };
+  document.getElementById("f-subject").onchange = (e) => { f.subject = e.target.value; f.topic = ""; saveF(); viewQuestions(); };
+  document.getElementById("f-topic").onchange = (e) => { f.topic = e.target.value; saveF(); viewQuestions(); };
+  document.getElementById("f-range").onchange = (e) => { f.range = e.target.value; saveF(); viewQuestions(); };
+  let kwT; document.getElementById("f-kw").oninput = (e) => { clearTimeout(kwT); kwT = setTimeout(() => { f.kw = e.target.value.trim(); saveF(); viewQuestions(); const el = document.getElementById("f-kw"); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }, 350); };
+}
+
+function questionDetail(q, a) {
+  const ch = a ? a.answers[q.id] : null;
+  const res = a && a.results ? a.results[q.id] : undefined;
+  const opts = q.o.map((t, i) => {
+    const k = KEYS[i]; let cls = "";
+    if (q.a && k === q.a) cls = "right"; else if (ch === k) cls = "wrong";
+    return `<div class="opt ${cls}" role="listitem"><b>(${k})</b><span style="flex:1">${esc(t)}</span>${q.a && k === q.a ? `<span class="small" style="color:var(--good)">答案</span>` : ""}${ch === k ? `<span class="small muted">你的選擇</span>` : ""}</div>`;
+  }).join("");
+  const badge = res === true ? `<span class="chip good">答對</span>` : res === false ? `<span class="chip bad">${ch ? "答錯" : "未作答（計為錯）"}</span>` : a ? `<span class="chip">${ch ? "無法判分" : "未作答"}</span>` : "";
+  return `
+    <div class="row">${badge}<span class="chip">${SUBJECT_LABEL[q.s]}</span><span class="chip">${esc(q.t)}</span><span class="chip demo">示範題</span><span class="spacer"></span>
+      <button class="btn sm" data-act="mark" data-id="${q.id}" aria-pressed="${!!state.bookmarks[q.id]}">${state.bookmarks[q.id] ? "★ 已收藏" : "☆ 收藏"}</button></div>
+    <p class="stem">${esc(q.q)}</p>
+    <div class="opts" role="list">${opts}</div>
+    <p><b>答案：</b>${q.a ? `(${q.a}) <span class="chip demo">自編參考答案（非官方）</span>` : `<span style="color:var(--bad);font-weight:700">缺少官方答案（不推測、不判分）</span>`}</p>
+    <div class="explain"><div class="row"><b>解析</b>${q.e ? `<span class="chip demo">解析待審核</span>` : `<span class="chip">尚無解析</span>`}</div>
+      ${q.e ? `<p class="small" style="color:var(--warn)">此解析為草稿，尚未經審核，請斟酌參考。</p><p>${esc(q.e)}</p>` : `<p class="muted">尚無解析。</p>`}</div>
+    <dl class="meta"><dt>來源類型</dt><dd>自編示範題（非歷屆真題）</dd><dt>題組／題號</dt><dd>${paperLine(q)}</dd><dt>原始試卷網址</dt><dd>不適用（自編）</dd><dt>資料核對</dt><dd>不適用（自編示範題，無原卷）</dd></dl>
+    ${DUPS[q.id] ? `<p class="small"><span class="chip law">重複題</span> 此題亦出現於 ${DUPS[q.id]}，各自保留來源。</p>` : ""}
+    ${LAW.has(q.s) ? `<div class="lawbox small"><b>法規資訊</b><dl class="meta"><dt>考試當時適用法規</dt><dd>未填（示範題無考試時點）</dd><dt>目前法規</dt><dd><span class="chip demo">需重新核對目前法規</span></dd><dt>引用條文</dt><dd>尚未建立法條引用（條文未核對）</dd></dl></div>` : ""}`;
+}
+
+function viewQuiz(id) {
+  const a = attemptById(id);
+  if (!a) { location.hash = "home"; return; }
+  if (a.submittedAt) { location.hash = "result-" + id; return; }
+  const total = a.qids.length; a.cur = Math.min(a.cur || 0, total - 1);
+  const q = QMAP.get(a.qids[a.cur]);
+  const ch = a.answers[q.id];
+  const revealed = a.instant && ch;
+  const answered = Object.keys(a.answers).length;
+  const isExam = a.mode === "EXAM";
+  const opts = q.o.map((t, i) => {
+    const k = KEYS[i]; let cls = "";
+    if (revealed && q.a && k === q.a) cls = "right"; else if (revealed && ch === k) cls = "wrong";
+    return `<button class="opt ${cls}" data-act="choose" data-k="${k}" aria-pressed="${ch === k}" ${revealed ? "disabled" : ""}><b>(${k})</b><span>${esc(t)}</span></button>`;
+  }).join("");
+  const g = revealed ? grade(q, ch) : undefined;
+  $app.innerHTML = `
+    <section class="row">
+      <div style="min-width:0;flex:1"><h1 style="font-size:18px">${esc(a.title)}</h1><p class="small muted">已作答 ${answered} / ${total}　${isExam ? "限時模擬考" : a.instant ? "即時回饋" : "交卷後看答案"}</p></div>
+      ${isExam ? `<span class="timer" id="timer" role="timer">--:--</span>` : ""}
+      <button class="btn sm" data-act="grid">題號盤</button>
+    </section>
+    ${ui.gridOpen ? `<section class="card"><div class="qgrid">${a.qids.map((qid, i) => `<button data-act="goto" data-i="${i}" class="${a.answers[qid] ? "done" : ""} ${i === a.cur ? "cur" : ""}" aria-label="第 ${i + 1} 題">${i + 1}</button>`).join("")}</div></section>` : ""}
+    <p id="lowtime" class="notice" hidden>剩不到 5 分鐘，時間到會自動交卷。</p>
+    <article class="card">
+      <div class="row"><span class="chip">${SUBJECT_LABEL[q.s]}</span><span class="chip">${esc(q.t)}</span><span class="chip demo">示範題</span><span class="small muted">${paperLine(q)}</span><span class="spacer"></span>
+        <button class="btn sm" data-act="mark" data-id="${q.id}" aria-pressed="${!!state.bookmarks[q.id]}">${state.bookmarks[q.id] ? "★ 已收藏" : "☆ 收藏"}</button></div>
+      <p class="notice">自編示範題，非歷屆真題。</p>
+      ${q.a ? "" : `<p class="notice" style="background:var(--bad-soft);color:var(--bad)">本題缺少官方答案，作答後不判分。</p>`}
+      <p class="stem"><b>${a.cur + 1}.</b> ${esc(q.q)}</p>
+      <div class="opts">${opts}</div>
+      ${revealed ? `<div class="explain"><p><b style="color:${g === true ? "var(--good)" : g === false ? "var(--bad)" : "var(--muted)"}">${g === true ? "答對了！" : g === false ? "答錯了。" : "無法判分。"}</b> 答案：${q.a ? `(${q.a})（自編參考答案）` : "缺少官方答案"}</p>${q.e ? `<p class="small" style="color:var(--warn)">解析草稿（待審核）</p><p>${esc(q.e)}</p>` : ""}</div>` : ""}
+    </article>
+    ${ui.confirmSubmit ? `<section class="confirm"><p>還有 <b>${total - answered}</b> 題未作答，確定要交卷嗎？${isExam ? "模擬考中未作答的題目計為答錯。" : ""}</p><div class="row"><button class="btn primary" data-act="submitnow">確定交卷</button><button class="btn" data-act="cancelsubmit">繼續作答</button></div></section>` : ""}`;
+  setDock(`
+    ${isExam ? `<span class="timer" id="timer2" style="font-size:15px">--:--</span>` : ""}
+    <button class="btn" data-act="prev" ${a.cur === 0 ? "disabled" : ""}>上一題</button>
+    <button class="btn" data-act="next" ${a.cur === total - 1 ? "disabled" : ""}>下一題</button>
+    <span class="spacer"></span>
+    <button class="btn primary" data-act="submit">交卷</button>`);
+  if (isExam) {
+    const upd = () => {
+      const left = Math.max(0, Math.ceil((a.deadline - Date.now()) / 1000));
+      for (const id of ["timer", "timer2"]) { const el = document.getElementById(id); if (el) { el.textContent = "⏱ " + fmtClock(left); el.classList.toggle("low", left <= 300); } }
+      const lt = document.getElementById("lowtime"); if (lt) lt.hidden = !(left > 0 && left <= 300);
+      if (left <= 0 && !a.submittedAt) { clearInterval(tick); submitAttempt(a, "TIMEOUT"); location.hash = "result-" + a.id; }
+    };
+    upd(); tick = setInterval(upd, 500);
+  }
+  window.scrollTo(0, 0);
+}
+
+function viewResult(id) {
+  const a = attemptById(id);
+  if (!a) { location.hash = "home"; return; }
+  if (!a.submittedAt) { location.hash = "quiz-" + id; return; }
+  const by = {};
+  for (const qid of a.qids) { const q = QMAP.get(qid); const r = a.results[qid]; if (r === null || r === undefined) continue; by[q.s] = by[q.s] || { g: 0, c: 0 }; by[q.s].g++; if (r) by[q.s].c++; }
+  const wrongIds = a.qids.filter((qid) => a.results[qid] === false);
+  const ungradable = a.qids.filter((qid) => a.answers[qid] && a.results[qid] === null).length;
+  const shown = a.qids.filter((qid) => ui.resultView === "wrong" ? a.results[qid] === false : ui.resultView === "unanswered" ? !a.answers[qid] : true);
+  const isExam = a.mode === "EXAM";
+  const used = isExam ? (a.reason === "TIMEOUT" ? a.limitSec : Math.min(a.limitSec, Math.round((a.submittedAt - a.startedAt) / 1000))) : null;
+  $app.innerHTML = `
+    <section class="card">
+      <h1>${isExam ? "模擬考成績" : "交卷結果"}</h1>
+      <p class="small muted">${esc(a.title)}　交卷時間 ${fmtTime(a.submittedAt)}</p>
+      ${isExam ? `<div class="row"><span class="big">${a.gradable ? Math.round((a.correct / a.gradable) * 100) : 0} 分</span><span class="chip ${a.reason === "TIMEOUT" ? "demo" : ""}">${a.reason === "TIMEOUT" ? "時間到自動交卷" : "手動交卷"}</span><span class="small">用時 ${fmtDur(used)}／時限 ${a.limitSec / 60} 分鐘</span></div>` : ""}
+      <div class="stats3" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
+        <div class="stat"><b>${pct(a.correct, a.gradable)}</b><span>正確率</span></div>
+        <div class="stat"><b>${a.correct} / ${a.gradable}</b><span>答對／計分題數</span></div>
+        <div class="stat"><b>${a.answered} / ${a.qids.length}</b><span>已作答／總題數</span></div>
+        <div class="stat"><b>${ungradable}</b><span>無法判分（缺答案）</span></div>
+      </div>
+      ${a.plan ? `<p class="small"><b>出題比例：</b>${esc(a.plan.label)}；${a.plan.subjects.map((s, i) => `${SUBJECT_LABEL[s]} 預計 ${a.plan.planned[i]} 題／實際 ${a.plan.actual[i]} 題`).join("；")}</p>` : ""}
+      <div class="row">${Object.entries(by).map(([s, v]) => `<span class="chip">${SUBJECT_LABEL[s]} ${pct(v.c, v.g)}（${v.c}/${v.g}）</span>`).join("")}</div>
+      <p class="small muted">${isExam ? "缺少官方答案的題目不判分；未作答題目計為答錯，但不加入錯題本。" : "缺少官方答案的題目不判分；未作答題目不計分，也不加入錯題本。"}</p>
+      <div class="row">
+        <button class="btn sm ${ui.resultView === "all" ? "primary" : ""}" data-act="rview" data-v="all">全部</button>
+        <button class="btn sm ${ui.resultView === "wrong" ? "primary" : ""}" data-act="rview" data-v="wrong">只看錯題（${wrongIds.length}）</button>
+        <button class="btn sm ${ui.resultView === "unanswered" ? "primary" : ""}" data-act="rview" data-v="unanswered">未作答</button>
+        <button class="btn sm" data-act="retry" data-id="${a.id}" ${wrongIds.length ? "" : "disabled"}>重練本次錯題</button>
+        ${isExam ? `<a class="btn sm" href="#exam">再考一次</a>` : ""}
+      </div>
+    </section>
+    ${shown.map((qid, i) => `<article class="card">${questionDetail(QMAP.get(qid), a)}</article>`).join("")}`;
+}
+
+function viewExam() {
+  const pools = Object.fromEntries(SUBJECTS.map((s) => [s, QUESTIONS.filter((q) => q.s === s && q.a).length]));
+  const hist = state.attempts.filter((a) => a.mode === "EXAM").slice().reverse();
+  $app.innerHTML = `
+    <h1>限時模擬考</h1>
+    <p class="small muted">時間到會自動交卷；作答中不顯示答案。未作答的題目計為答錯（不加入錯題本），答錯的題目加入錯題本。預設排除缺少官方答案的題目。</p>
+    <section class="grid2">
+      ${PRESETS.map((p) => { const avail = p.subjects.map((s) => pools[s]); const planned = apportion(p.count, p.subjects.map(() => 1)); const actual = allocate(p.count, avail); const have = actual.reduce((x, y) => x + y, 0); return `
+        <div class="card">
+          <div><h2>${p.name}</h2><p><b>${p.count} 題</b>・<b>${p.minutes} 分鐘</b></p></div>
+          <div class="explain small">
+            <p><b>出題比例：</b>線上示範版沒有已核對的銀行甄試真題，暫以平均分配 <span class="chip demo">暫以平均分配</span></p>
+            <div class="tablewrap"><table><thead><tr><th>科目</th><th>比例</th><th>預計</th><th>題庫可出</th><th>本次實際</th></tr></thead>
+            <tbody>${p.subjects.map((s, i) => `<tr><td>${SUBJECT_LABEL[s]}</td><td class="num">50%</td><td class="num">${planned[i]}</td><td class="num">${avail[i]}</td><td class="num" style="${actual[i] !== planned[i] ? "color:var(--warn);font-weight:700" : ""}">${actual[i]}</td></tr>`).join("")}</tbody></table></div>
+          </div>
+          ${have < p.count ? `<p class="notice">題庫目前只有 ${have} 題可出，本次將以 ${have} 題進行，時限仍為 ${p.minutes} 分鐘。</p>` : ""}
+          <button class="btn primary" data-act="exam" data-k="${p.key}" ${have ? "" : "disabled"}>開始模擬考</button>
+        </div>`; }).join("")}
+    </section>
+    <section class="card">
+      <h2>模擬考紀錄</h2>
+      ${hist.length ? `<div class="tablewrap"><table><thead><tr><th>開始時間</th><th>考試</th><th>得分</th><th>用時／時限</th><th></th></tr></thead><tbody>
+        ${hist.map((a) => { const used = a.submittedAt ? (a.reason === "TIMEOUT" ? a.limitSec : Math.min(a.limitSec, Math.round((a.submittedAt - a.startedAt) / 1000))) : null; return `<tr>
+          <td class="num">${fmtTime(a.startedAt)}</td><td>${esc(a.title.replace("模擬考・", ""))}</td>
+          <td class="num">${a.submittedAt ? `${pct(a.correct, a.gradable)}（${a.correct}/${a.gradable}）` : "進行中"}</td>
+          <td class="num">${used !== null ? fmtDur(used) : "—"}／${a.limitSec / 60} 分${a.reason === "TIMEOUT" ? ` <span class="chip demo">時間到</span>` : ""}</td>
+          <td><a href="#${a.submittedAt ? "result" : "quiz"}-${a.id}">${a.submittedAt ? "查看" : "繼續作答"}</a></td></tr>`; }).join("")}
+      </tbody></table></div>` : `<p class="muted">尚無模擬考紀錄。</p>`}
+    </section>`;
+}
+
+function viewReview() {
+  const tab = ui.reviewTab;
+  const ids = QUESTIONS.filter((q) => tab === "bookmarks" ? state.bookmarks[q.id] : state.wrong[q.id] && state.wrong[q.id].status === (tab === "familiar" ? "FAMILIAR" : "ACTIVE")).map((q) => q.id);
+  $app.innerHTML = `
+    <h1>錯題本與收藏</h1>
+    <p class="small muted">答錯的題目會自動加入錯題本；連續答對 ${FAMILIAR_STREAK} 次後標記為「已熟悉」，作答紀錄仍保留，你可以選擇繼續複習。</p>
+    <div class="row">
+      ${[["wrong", "待複習錯題"], ["familiar", "已熟悉"], ["bookmarks", "收藏"]].map(([k, l]) => `<button class="btn sm ${tab === k ? "primary" : ""}" data-act="rtab" data-v="${k}">${l}</button>`).join("")}
+      <span class="spacer"></span>
+      <button class="btn primary" data-act="reviewstart" ${ids.length ? "" : "disabled"}>${tab === "familiar" ? "繼續複習已熟悉題目" : tab === "bookmarks" ? "練習收藏題" : "開始複習錯題"}（${ids.length}）</button>
+    </div>
+    <section class="list">
+      ${ids.map((id) => { const q = QMAP.get(id); const w = state.wrong[id]; return `
+        <div class="card">
+          <div class="row"><span class="chip">${SUBJECT_LABEL[q.s]}</span><span class="chip">${esc(q.t)}</span><span class="chip demo">示範題</span></div>
+          <p>${esc(q.q)}</p>
+          <div class="row small">
+            ${w ? `<span class="chip bad">答錯 ${w.n} 次</span><span class="chip">連續答對 ${w.streak} 次</span>${w.status === "FAMILIAR" ? `<span class="chip good">已熟悉</span>` : ""}<span class="muted">最近作答 ${fmtTime(w.last)}</span>` : ""}
+            <span class="spacer"></span>
+            ${w && w.status === "FAMILIAR" ? `<button class="btn sm" data-act="wstatus" data-id="${id}" data-v="ACTIVE">移回待複習</button>` : ""}
+            ${w && w.status === "ACTIVE" ? `<button class="btn sm" data-act="wstatus" data-id="${id}" data-v="FAMILIAR">手動標為已熟悉</button>` : ""}
+            <button class="btn sm" data-act="mark" data-id="${id}" aria-pressed="${!!state.bookmarks[id]}">${state.bookmarks[id] ? "★ 取消收藏" : "☆ 收藏"}</button>
+          </div>
+        </div>`; }).join("") || `<p class="card muted">目前沒有題目。</p>`}
+    </section>`;
+}
+
+function viewStats() {
+  const topics = {};
+  for (const a of state.attempts) if (a.submittedAt) for (const qid of a.qids) { const r = a.results[qid]; if (r === null || r === undefined) continue; const q = QMAP.get(qid); const k = q.s + "|" + q.t; topics[k] = topics[k] || { s: q.s, t: q.t, g: 0, c: 0 }; topics[k].g++; if (r) topics[k].c++; }
+  const hist = state.attempts.slice().reverse();
+  const mode = { PRACTICE: "練習", REVIEW: "錯題／收藏複習", RETRY: "重練錯題", EXAM: "模擬考" };
+  $app.innerHTML = `
+    <h1>進度統計</h1>
+    <section class="card">
+      <h2>各科正確率</h2>
+      ${SUBJECTS.map((s) => { const st = subjectStats(s); const w = st.gradable ? Math.round((st.correct / st.gradable) * 100) : 0; return `
+        <div style="display:grid;gap:4px">
+          <div class="row small"><b>${SUBJECT_LABEL[s]}</b><span class="spacer"></span><span class="muted">正確率 <b style="color:var(--fg)">${pct(st.correct, st.gradable)}</b>（${st.correct}/${st.gradable}）・作答 ${st.answered}・錯題 ${st.wrong}</span></div>
+          <div class="bar" role="img" aria-label="${SUBJECT_LABEL[s]} 正確率 ${w}%"><i style="width:${w}%"></i></div>
+        </div>`; }).join("")}
+    </section>
+    <section class="card">
+      <h2>各主題正確率</h2>
+      ${Object.keys(topics).length ? `<div class="tablewrap"><table><thead><tr><th>科目</th><th>主題</th><th>答對／計分</th><th>正確率</th></tr></thead><tbody>
+        ${Object.values(topics).map((t) => `<tr><td>${SUBJECT_LABEL[t.s]}</td><td>${esc(t.t)}</td><td class="num">${t.c}／${t.g}</td><td class="num">${pct(t.c, t.g)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">尚無作答資料。</p>`}
+    </section>
+    <section class="card">
+      <h2>作答紀錄</h2>
+      ${hist.length ? `<div class="tablewrap"><table><thead><tr><th>時間</th><th>類型</th><th>內容</th><th>得分</th><th></th></tr></thead><tbody>
+        ${hist.map((a) => `<tr><td class="num">${fmtTime(a.submittedAt || a.startedAt)}</td><td>${mode[a.mode] || a.mode}</td><td>${esc(a.title)}</td>
+          <td class="num">${a.submittedAt ? `${a.correct}/${a.gradable}（${pct(a.correct, a.gradable)}）` : "未交卷"}</td>
+          <td><a href="#${a.submittedAt ? "result" : "quiz"}-${a.id}">${a.submittedAt ? "查看" : "繼續作答"}</a></td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">尚無作答紀錄。</p>`}
+    </section>
+    <section class="card">
+      <h2>資料</h2>
+      <p class="syncnote" data-sync>${syncText()}</p>
+      ${ui.confirmReset ? `<div class="confirm"><p>確定要清除所有作答紀錄、錯題本與收藏嗎？清除後無法復原。</p><div class="row"><button class="btn danger" data-act="resetnow">確定清除</button><button class="btn" data-act="resetcancel">取消</button></div></div>` : `<div><button class="btn danger" data-act="reset">清除我的作答紀錄</button></div>`}
+    </section>`;
+}
+
+function viewAbout() {
+  $app.innerHTML = `
+    <h1>說明</h1>
+    <section class="card">
+      <h2>這是線上示範版</h2>
+      <p>可以直接用手機或電腦開啟，練習 21 題自編示範題，功能包含分科刷題、錯題本、收藏、進度統計與限時模擬考。</p>
+      <p class="notice">示範題為自編，非任何銀行歷屆真題；答案為自編參考答案，非官方答案。法規題的解析未引用條號，條文需以全國法規資料庫核對。</p>
+      <p class="syncnote" data-sync>${syncText()}</p>
+    </section>
+    <section class="card">
+      <h2>完整版（本機）才有的功能</h2>
+      <ul style="margin:0;padding-left:20px;display:grid;gap:4px">
+        <li>匯入官方原卷 PDF／CSV、逐題人工核對後發布</li>
+        <li>依銀行、年度、甄試名稱篩選；銀行甄試題與 FIT 參考試題分開標示</li>
+        <li>依已核對真題統計的各科比例出題、手動設定比例</li>
+        <li>題目、答案、解析審核、法條引用與重複題管理</li>
+      </ul>
+      <p class="small muted">完整版的原始碼在 GitHub 儲存庫 Vicky-sucoot/test-item 的 main 分支，依 README 在電腦上安裝執行。</p>
+    </section>`;
+}
+
+// ---------- 事件 ----------
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const act = el.dataset.act;
+  const id = Number(el.dataset.id);
+  const v = currentView(); const aid = Number(v.split("-")[1]); const a = attemptById(aid);
+  switch (act) {
+    case "quick": { const ids = shuffle(QUESTIONS.filter((q) => q.s === el.dataset.s).map((q) => q.id)).slice(0, 10); startAttempt({ qids: ids, title: SUBJECT_LABEL[el.dataset.s] + "・隨機練習", mode: "PRACTICE" }); break; }
+    case "quickwrong": { const ids = QUESTIONS.filter((q) => q.s === el.dataset.s && state.wrong[q.id] && state.wrong[q.id].status === "ACTIVE").map((q) => q.id); startAttempt({ qids: shuffle(ids), title: SUBJECT_LABEL[el.dataset.s] + "・錯題複習", mode: "REVIEW", instant: true }); break; }
+    case "tabmarks": ui.reviewTab = "bookmarks"; break;
+    case "startfilter": {
+      const list = filterQuestions(ui.filters); const n = Math.max(1, Math.min(list.length, Number(document.getElementById("p-count").value) || 10));
+      const ordered = document.getElementById("p-order").value === "seq" ? list : shuffle(list);
+      const f = ui.filters; const title = [f.range === "wrong" ? "錯題複習" : f.range === "familiar" ? "已熟悉題複習" : f.range === "bookmark" ? "收藏題" : "", f.subject ? SUBJECT_LABEL[f.subject] : "全部科目", f.topic].filter(Boolean).join("・");
+      startAttempt({ qids: ordered.slice(0, n).map((q) => q.id), title, mode: f.range ? "REVIEW" : "PRACTICE", instant: document.getElementById("p-instant").checked });
+      break;
+    }
+    case "peek": { const q = QMAP.get(id); const card = document.createElement("article"); card.className = "card"; card.innerHTML = questionDetail(q, null); el.replaceWith(card); break; }
+    case "mark": { if (state.bookmarks[id]) delete state.bookmarks[id]; else state.bookmarks[id] = Date.now(); persist(); const on = !!state.bookmarks[id]; document.querySelectorAll(`[data-act="mark"][data-id="${id}"]`).forEach((b) => { b.setAttribute("aria-pressed", on); b.textContent = on ? "★ 已收藏" : "☆ 收藏"; }); if (currentView() === "review") viewReview(); break; }
+    case "choose": {
+      if (!a || a.submittedAt) break; const qid = a.qids[a.cur]; const k = el.dataset.k;
+      if (a.mode === "EXAM" && Date.now() > a.deadline + GRACE_MS) { submitAttempt(a, "TIMEOUT"); location.hash = "result-" + a.id; break; }
+      if (a.instant && a.answers[qid]) break;
+      if (!a.instant && a.answers[qid] === k) delete a.answers[qid]; else a.answers[qid] = k;
+      persist(); viewQuiz(a.id); break;
+    }
+    case "prev": if (a) { a.cur--; ui.confirmSubmit = false; viewQuiz(a.id); } break;
+    case "next": if (a) { a.cur++; ui.confirmSubmit = false; viewQuiz(a.id); } break;
+    case "goto": if (a) { a.cur = Number(el.dataset.i); ui.gridOpen = false; viewQuiz(a.id); } break;
+    case "grid": ui.gridOpen = !ui.gridOpen; if (a) viewQuiz(a.id); break;
+    case "submit": if (a) { const left = a.qids.length - Object.keys(a.answers).length; if (left > 0 && !ui.confirmSubmit) { ui.confirmSubmit = true; viewQuiz(a.id); } else { ui.confirmSubmit = false; submitAttempt(a, "MANUAL"); ui.resultView = "all"; location.hash = "result-" + a.id; } } break;
+    case "submitnow": if (a) { ui.confirmSubmit = false; submitAttempt(a, "MANUAL"); ui.resultView = "all"; location.hash = "result-" + a.id; } break;
+    case "cancelsubmit": ui.confirmSubmit = false; if (a) viewQuiz(a.id); break;
+    case "rview": ui.resultView = el.dataset.v; if (a) viewResult(a.id); break;
+    case "retry": { const src = attemptById(id); const ids = src.qids.filter((qid) => src.results[qid] === false); startAttempt({ qids: ids, title: "重練錯題", mode: "RETRY" }); break; }
+    case "exam": {
+      const p = PRESETS.find((x) => x.key === el.dataset.k); const pools = p.subjects.map((s) => shuffle(QUESTIONS.filter((q) => q.s === s && q.a).map((q) => q.id)));
+      const planned = apportion(p.count, p.subjects.map(() => 1)); const actual = allocate(p.count, pools.map((x) => x.length));
+      startAttempt({ qids: shuffle(pools.flatMap((x, i) => x.slice(0, actual[i]))), title: "模擬考・" + p.name, mode: "EXAM", limitSec: p.minutes * 60, plan: { label: "線上示範版無已核對真題，暫以平均分配", subjects: p.subjects, planned, actual } });
+      break;
+    }
+    case "rtab": ui.reviewTab = el.dataset.v; viewReview(); break;
+    case "reviewstart": {
+      const tab = ui.reviewTab; const ids = QUESTIONS.filter((q) => tab === "bookmarks" ? state.bookmarks[q.id] : state.wrong[q.id] && state.wrong[q.id].status === (tab === "familiar" ? "FAMILIAR" : "ACTIVE")).map((q) => q.id);
+      startAttempt({ qids: shuffle(ids), title: tab === "familiar" ? "已熟悉題複習" : tab === "bookmarks" ? "收藏題" : "錯題複習", mode: "REVIEW", instant: true }); break;
+    }
+    case "wstatus": { const w = state.wrong[id]; if (w) { w.status = el.dataset.v; if (w.status === "ACTIVE") w.streak = 0; persist(); viewReview(); } break; }
+    case "reset": ui.confirmReset = true; viewStats(); break;
+    case "resetcancel": ui.confirmReset = false; viewStats(); break;
+    case "resetnow": { const keepId = state.nextId; state = emptyState(); state.nextId = keepId; ui.confirmReset = false; persist(); viewStats(); break; }
+  }
+});
+window.addEventListener("hashchange", () => { ui.gridOpen = false; ui.confirmSubmit = false; render(); });
+
+loadLocal();
+render();
+initCloud();
+</script>
