@@ -5647,7 +5647,7 @@ function viewPracticeSetup() {
       <div class="checks" role="group" aria-label="隨機練習的科目">${checks("rp")}</div>
       <div class="row">
         <label class="field" for="rp-count">題數
-          <select id="rp-count">${[10, 20, 30, 50, 100].map((n) => `<option value="${n}" ${pref.count === n ? "selected" : ""}>${n} 題</option>`).join("")}</select>
+          <select id="rp-count">${[10, 20, 30, 50, 80, 100].map((n) => `<option value="${n}" ${pref.count === n ? "selected" : ""}>${n} 題</option>`).join("")}</select>
         </label>
         <span class="spacer"></span>
         <button class="btn primary" data-act="startrandom" style="align-self:end">開始隨機練習</button>
