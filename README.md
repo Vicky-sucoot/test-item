@@ -31,7 +31,7 @@ npm run dev
 
 ## 四科重點複習 App
 
-另一個獨立的單頁複習工具，位於 [review-app/](review-app/)：四科各 18 章（另有洗錢防制 4 章、考前重點 5 章），含重點、記憶卡與自編練習題。說明見 [review-app/README.md](review-app/README.md)。
+另一個獨立的單頁複習工具，位於 [review-app/](review-app/)：四科各 18 章（另有洗錢防制 8 章、考前重點 5 章），含重點、記憶卡與自編練習題。說明見 [review-app/README.md](review-app/README.md)。
 
 ## 線上示範版（直接開啟，不需安裝）
 
