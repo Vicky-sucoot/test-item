@@ -3220,6 +3220,17 @@ function viewAbout() {
       <p class="small muted">銀行法的連結目前指向全國法規資料庫首頁，請以法規名稱「銀行法」查詢；票據法連結直接指向該法全文。</p>
     </section>
     <section class="card">
+      <h2>安裝到手機（離線使用）</h2>
+      <p>離線版網址：<a href="https://vicky-sucoot.github.io/test-item/" target="_blank" rel="noopener">https://vicky-sucoot.github.io/test-item/</a></p>
+      <ol style="margin:0;padding-left:20px;display:grid;gap:4px">
+        <li>iPhone／iPad：用 Safari 開啟上面網址 → 點「分享」→「加入主畫面」。</li>
+        <li>Android：用 Chrome 開啟 → 點右上「⋮」→「安裝應用程式」或「加到主畫面」。</li>
+        <li>第一次開啟（需連網）後，之後沒有網路也能開啟與作答。</li>
+      </ol>
+      <div class="row" id="installRow" ${window.__installPrompt ? "" : "hidden"}><button class="btn primary" data-act="install">安裝到此裝置</button></div>
+      <p class="small muted">離線版的收藏、錯題與紀錄只存在該裝置的瀏覽器中，不會與 claude.ai 上的版本同步。</p>
+    </section>
+    <section class="card">
       <h2>紀錄保存</h2>
       <p class="syncnote" data-sync>${syncText()}</p>
       <div><button class="btn sm" data-act="clear">清除收藏與錯題</button></div>
@@ -3722,6 +3733,7 @@ document.addEventListener("click", (e) => {
   if (act === "exsubmitno") { ui.exam.confirm = false; viewExam(); return; }
   if (act === "exretry") { const x = ui.exam; startSess("retry", shuffleArr(x.keys.filter((k) => x.answers[k] !== undefined && x.answers[k] !== qOf(k).q.a)), "重練模擬測驗答錯的題目"); return; }
   if (act === "exagain") { const x = ui.exam; startExam(x.subject, x.keys.length, x.limitMin); return; }
+  if (act === "install") { if (window.__installPrompt) { window.__installPrompt.prompt(); window.__installPrompt = null; const r = document.getElementById("installRow"); if (r) r.hidden = true; } return; }
   if (act === "clear") { document.getElementById("clearConfirm").hidden = false; return; }
   if (act === "clearno") { document.getElementById("clearConfirm").hidden = true; return; }
   if (act === "clearyes") { state = empty(); ui.answers = {}; ui.sess = null; ui.exam = null; saveSess(); saveExam(); persist(); viewAbout(); return; }
@@ -3733,6 +3745,7 @@ window.addEventListener("hashchange", () => {
   render();
 });
 
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); window.__installPrompt = e; const r = document.getElementById("installRow"); if (r) r.hidden = false; });
 loadLocal();
 loadSess();
 loadExam();

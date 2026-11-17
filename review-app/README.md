@@ -3,7 +3,20 @@
 會計學、貨幣銀行學、票據法、銀行法的重點複習網頁（單一 HTML 檔）。
 
 - 線上版：<https://claude.ai/artifact/MZkFbX7bBsHtAbLwF64Abi>（僅擁有者可開啟，可由頁面「分享」設定）
-- 離線使用：直接用瀏覽器開啟 `review-app/index.html` 即可（收藏與錯題存在該瀏覽器）。
+- **手機安裝／離線版**：<https://vicky-sucoot.github.io/test-item/>（GitHub Pages，公開網址）
+  - iPhone／iPad：Safari 開啟 → 分享 →「加入主畫面」
+  - Android：Chrome 開啟 → ⋮ →「安裝應用程式」或「加到主畫面」
+  - 第一次開啟需連網，之後可離線使用；紀錄只存在該裝置的瀏覽器，不與 claude.ai 版同步
+- 也可直接用瀏覽器開啟 `review-app/index.html`（收藏與錯題存在該瀏覽器）。
+
+## 離線版（PWA）的檔案與更新方式
+
+- `review-app/pwa/`：發布到 GitHub Pages 的內容（`index.html`、`manifest.webmanifest`、`sw.js` 離線快取、`icons/`）
+- 修改 `review-app/index.html` 後：
+  1. `node review-app/pwa/build.mjs` 重新產生離線版（快取版本號會自動更新）
+  2. commit 變更
+  3. `bash review-app/pwa/publish.sh` 發布到 `gh-pages` 分支
+- 離線快取採「網路優先」：連網時開啟會取得最新版，離線時使用上次快取的版本。
 
 ## 內容
 
