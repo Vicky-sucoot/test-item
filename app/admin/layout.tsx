@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/import", label: "匯入" },
   { href: "/admin/questions", label: "題目管理" },
   { href: "/admin/topics", label: "主題章節" },
+  { href: "/admin/exam-settings", label: "模擬考比例" },
   { href: "/admin/sources", label: "來源與試卷" },
 ];
 

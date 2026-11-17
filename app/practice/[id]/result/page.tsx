@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getAttempt, getAttemptItems } from "@/lib/practice";
 import { getCitations, getDuplicates, getQuestionsByIds } from "@/lib/questions";
 import { pct } from "@/lib/stats";
-import { formatDuration, usedSeconds } from "@/lib/exam";
+import { examPlanOf, formatDuration, usedSeconds } from "@/lib/exam";
 import { subjectLabel } from "@/lib/constants";
 import { Options, QuestionDetails, QuestionHeader } from "@/components/QuestionView";
 import { Badge } from "@/components/Badges";
@@ -38,6 +38,7 @@ export default async function ResultPage({
   }
   const wrongCount = items.filter((i) => i.is_correct === 0).length;
   const examLink = attempt.mode === "EXAM";
+  const plan = examLink ? examPlanOf(attempt.filters) : null;
   const shown = items.filter((i) =>
     view === "wrong" ? i.is_correct === 0 : view === "unanswered" ? !i.chosen : true,
   );
@@ -66,8 +67,16 @@ export default async function ResultPage({
           <Stat label="正確率" value={pct(attempt.correct, attempt.gradable)} />
           <Stat label="答對 / 計分題數" value={`${attempt.correct} / ${attempt.gradable}`} />
           <Stat label="已作答 / 總題數" value={`${attempt.answered} / ${attempt.total}`} />
-          <Stat label="無法判分（缺答案）" value={String((attempt.answered ?? 0) - (attempt.gradable ?? 0))} />
+          <Stat label="無法判分（缺答案）" value={String(items.filter((i) => i.chosen && i.is_correct === null).length)} />
         </div>
+        {plan && (
+          <div className="rounded-lg bg-slate-50 p-2 text-xs">
+            <p><span className="font-semibold">出題比例：</span>{plan.ratioLabel}</p>
+            <p className="mt-0.5">
+              {plan.subjects.map((s, i) => `${subjectLabel(s)} 預計 ${plan.planned[i]} 題／實際 ${plan.actual[i]} 題`).join("；")}
+            </p>
+          </div>
+        )}
         {bySubject.size > 0 && (
           <div className="flex flex-wrap gap-2 text-sm">
             {[...bySubject].map(([s, v]) => (

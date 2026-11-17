@@ -2,6 +2,7 @@
 import { db } from "./db";
 import { SOURCE_TYPES, type SourceType, type Subject } from "./constants";
 import { EXAM_GRACE_MS, createAttempt, submitAttempt } from "./practice";
+import { allocateByWeights, apportion } from "./examRatio";
 
 export interface ExamPreset {
   key: string;
@@ -18,25 +19,9 @@ export const EXAM_PRESETS: ExamPreset[] = [
 
 export { EXAM_GRACE_MS };
 
-/**
- * 各科平均分配題數；某科題目不足時，由其他科補足。純函式。
- * 回傳每科實際抽題數，總和 = min(count, 總可用題數)。
- */
+/** 各科平均分配題數；某科不足時由其他科補足。純函式。 */
 export function allocate(count: number, available: number[]): number[] {
-  const n = available.length;
-  const out = new Array(n).fill(0);
-  let remaining = Math.min(count, available.reduce((a, b) => a + b, 0));
-  while (remaining > 0) {
-    const open = available.map((a, i) => (out[i] < a ? i : -1)).filter((i) => i >= 0);
-    const share = Math.max(1, Math.floor(remaining / open.length));
-    for (const i of open) {
-      if (remaining <= 0) break;
-      const take = Math.min(share, available[i] - out[i], remaining);
-      out[i] += take;
-      remaining -= take;
-    }
-  }
-  return out;
+  return allocateByWeights(count, available.map(() => 1), available);
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -78,24 +63,63 @@ export interface ExamConfig {
   minutes: number;
   sourceTypes: SourceType[];
   excludeMissing: boolean;
+  /** 各科權重（第三階段）；未提供時平均分配 */
+  weights?: number[];
+  /** 比例來源說明，記錄在作答紀錄中 */
+  ratioLabel?: string;
 }
 
-export function createExam(cfg: ExamConfig): { attemptId: number | null; picked: number } {
+export interface ExamPlan {
+  subjects: Subject[];
+  planned: number[];
+  actual: number[];
+  available: number[];
+  ratioLabel: string;
+}
+
+/** 計算抽題計畫：planned 為依比例應出題數，actual 為考慮題庫可用題數後的實際題數 */
+export function planExam(cfg: ExamConfig): { plan: ExamPlan; pools: number[][] } {
   const pools = cfg.subjects.map((s) => examPool(s, cfg.sourceTypes, cfg.excludeMissing));
-  const alloc = allocate(cfg.count, pools.map((p) => p.length));
-  const ids = shuffle(pools.flatMap((p, i) => p.slice(0, alloc[i])));
-  if (!ids.length) return { attemptId: null, picked: 0 };
+  const weights = cfg.weights ?? cfg.subjects.map(() => 1);
+  const available = pools.map((p) => p.length);
+  return {
+    pools,
+    plan: {
+      subjects: cfg.subjects,
+      planned: apportion(cfg.count, weights),
+      actual: allocateByWeights(cfg.count, weights, available),
+      available,
+      ratioLabel: cfg.ratioLabel ?? "平均分配",
+    },
+  };
+}
+
+export function createExam(cfg: ExamConfig): { attemptId: number | null; picked: number; plan: ExamPlan } {
+  const { plan, pools } = planExam(cfg);
+  const ids = shuffle(pools.flatMap((p, i) => p.slice(0, plan.actual[i])));
+  if (!ids.length) return { attemptId: null, picked: 0, plan };
   const limitSec = cfg.minutes * 60;
   const attemptId = createAttempt(ids, {
     mode: "EXAM",
     title: `模擬考・${cfg.name}`,
     instant: false,
-    filters: JSON.stringify(cfg),
+    filters: JSON.stringify({ ...cfg, plan }),
   });
   db()
     .prepare("UPDATE attempts SET time_limit_sec=?, deadline_ms=? WHERE id=?")
     .run(limitSec, Date.now() + limitSec * 1000, attemptId);
-  return { attemptId, picked: ids.length };
+  return { attemptId, picked: ids.length, plan };
+}
+
+/** 從作答紀錄取回抽題計畫（第二階段建立的考試沒有計畫，回傳 null） */
+export function examPlanOf(filters: string | null): ExamPlan | null {
+  if (!filters) return null;
+  try {
+    const f = JSON.parse(filters);
+    return f.plan ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function isExpired(a: { mode: string; deadline_ms: number | null; submitted_at: string | null }, now = Date.now()) {

@@ -30,6 +30,8 @@ import {
   type ItemInput,
 } from "@/lib/import/service";
 import type { PaperMeta } from "@/lib/import/csv";
+import { EXAM_PRESETS } from "@/lib/exam";
+import { saveExamSettings, type RatioMode } from "@/lib/examRatio";
 
 const str = (fd: FormData, k: string) => {
   const v = fd.get(k);
@@ -384,4 +386,30 @@ export async function savePaperAction(fd: FormData) {
     );
   revalidatePath("/", "layout");
   redirect(`/admin/sources?saved=1#paper-${id}`);
+}
+
+// ---------- 模擬考比例 ----------
+
+export async function saveExamSettingsAction(fd: FormData) {
+  await requireAdmin();
+  const preset = EXAM_PRESETS.find((p) => p.key === fd.get("preset_key"));
+  if (!preset) redirect("/admin/exam-settings");
+  const mode = oneOf(str(fd, "ratio_mode"), ["AUTO", "MANUAL", "EVEN"] as const, "AUTO") as RatioMode;
+  const weights: Record<string, number> = {};
+  for (const s of preset.subjects) {
+    const v = Number(str(fd, `w_${s}`) ?? 0);
+    weights[s] = Number.isFinite(v) && v > 0 ? v : 0;
+  }
+  const from = int(fd, "basis_year_from");
+  const to = int(fd, "basis_year_to");
+  saveExamSettings({
+    preset_key: preset.key,
+    ratio_mode: mode,
+    manual_weights: weights,
+    basis_bank: str(fd, "basis_bank"),
+    basis_year_from: from && to && from > to ? to : from,
+    basis_year_to: from && to && from > to ? from : to,
+  });
+  revalidatePath("/exam");
+  redirect(`/admin/exam-settings?saved=${preset.key}#${preset.key}`);
 }

@@ -115,6 +115,17 @@ CREATE TABLE IF NOT EXISTS attempt_items (
   PRIMARY KEY (attempt_id, seq)
 );
 
+-- 第三階段：模擬考各科比例設定
+CREATE TABLE IF NOT EXISTS exam_settings (
+  preset_key TEXT PRIMARY KEY,
+  ratio_mode TEXT NOT NULL DEFAULT 'AUTO',   -- AUTO 依已核對真題統計 / MANUAL 手動 / EVEN 平均
+  manual_weights TEXT,                       -- JSON：{科目代碼: 權重}
+  basis_bank TEXT,
+  basis_year_from INTEGER,
+  basis_year_to INTEGER,
+  updated_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS bookmarks (
   question_id INTEGER PRIMARY KEY REFERENCES questions(id) ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))

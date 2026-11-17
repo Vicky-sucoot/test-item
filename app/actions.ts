@@ -8,6 +8,7 @@ import { formatAnswer } from "@/lib/answer";
 import { subjectLabel } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { EXAM_PRESETS, createExam } from "@/lib/exam";
+import { getExamSettings, resolveRatio } from "@/lib/examRatio";
 import { SOURCE_TYPES, SUBJECTS, type SourceType, type Subject } from "@/lib/constants";
 
 function titleFor(fd: FormData): string {
@@ -105,15 +106,25 @@ export async function startExamAction(fd: FormData) {
     (SOURCE_TYPES as readonly string[]).includes(s),
   );
   let name: string, subjects: Subject[], count: number, minutes: number;
+  let settings;
   if (preset) {
     ({ name, subjects, count, minutes } = preset);
+    settings = getExamSettings(preset.key);
   } else {
+    settings = {
+      ratio_mode: fd.get("ratio_mode") === "EVEN" ? ("EVEN" as const) : ("AUTO" as const),
+      manual_weights: {},
+      basis_bank: null,
+      basis_year_from: null,
+      basis_year_to: null,
+    };
     subjects = (fd.getAll("subject") as string[]).filter((s): s is Subject => (SUBJECTS as readonly string[]).includes(s));
     count = Math.min(Math.max(Number(fd.get("count")) || 50, 1), 200);
     minutes = Math.min(Math.max(Number(fd.get("minutes")) || 60, 1), 300);
     name = "自訂";
     if (!subjects.length) redirect("/exam?error=" + encodeURIComponent("請至少選擇一個科目"));
   }
+  const ratio = resolveRatio(subjects, settings);
   const { attemptId } = createExam({
     name,
     subjects,
@@ -121,6 +132,8 @@ export async function startExamAction(fd: FormData) {
     minutes,
     sourceTypes: sourceTypes.length ? sourceTypes : [...SOURCE_TYPES],
     excludeMissing: fd.get("include_missing") !== "1",
+    weights: ratio.weights,
+    ratioLabel: ratio.label,
   });
   if (!attemptId) redirect("/exam?error=" + encodeURIComponent("所選條件沒有可出題的題目"));
   redirect(`/practice/${attemptId}`);
