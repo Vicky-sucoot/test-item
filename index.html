@@ -74,6 +74,10 @@ header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; 
 header.top .wrap { display: flex; align-items: center; gap: 10px; padding-block: 8px; }
 .brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--fg); text-decoration: none; white-space: nowrap; }
 nav.tabs { display: flex; gap: 2px; overflow-x: auto; margin-left: auto; scrollbar-width: none; min-width: 0; }
+.themebtn { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+.themebtn:hover { background: var(--sunk); }
+.themes { display: flex; flex-wrap: wrap; gap: 8px; }
+.themes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 nav.tabs a { padding: 6px 10px; border-radius: 8px; text-decoration: none; color: var(--fg); white-space: nowrap; font-size: 14px; }
 nav.tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 main { padding-block: 20px 64px; display: grid; gap: 16px; }
@@ -204,6 +208,7 @@ table.mini th, table.mini td a { white-space: nowrap; }
       <a href="#stats">統計</a>
       <a href="#about">說明</a>
     </nav>
+    <button class="themebtn" id="themeBtn" type="button" data-act="theme" aria-label="顯示模式：跟隨系統（點擊切換）" title="顯示模式：跟隨系統"><span aria-hidden="true">◐</span></button>
   </div>
 </header>
 <main class="wrap" id="app"></main>
@@ -3264,6 +3269,11 @@ function viewAbout() {
       <p class="small muted">銀行法的連結目前指向全國法規資料庫首頁，請以法規名稱「銀行法」查詢；票據法連結直接指向該法全文。</p>
     </section>
     <section class="card">
+      <h2>顯示模式</h2>
+      <p class="small muted">也可以點右上角的 ◐／☀／☾ 按鈕依序切換。</p>
+      <div class="themes" role="group" aria-label="顯示模式">${THEME_ORDER.map((k) => `<button class="btn sm" data-act="themeset" data-v="${k}" aria-pressed="${getThemePref() === k}">${THEME_ICON[k]} ${THEME_LABEL[k]}</button>`).join("")}</div>
+    </section>
+    <section class="card">
       <h2>安裝到手機（離線使用）</h2>
       <p>離線版網址：<a href="https://vicky-sucoot.github.io/test-item/" target="_blank" rel="noopener">https://vicky-sucoot.github.io/test-item/</a></p>
       <ol style="margin:0;padding-left:20px;display:grid;gap:4px">
@@ -3701,6 +3711,8 @@ document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
   const act = el.dataset.act;
   const h = (location.hash || "").slice(1);
+  if (act === "theme") { const cur = getThemePref(); const next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length]; setThemePref(next); return; }
+  if (act === "themeset") { setThemePref(el.dataset.v); return; }
   if (act === "homesubj") { setHomeSubject(el.dataset.v); viewHome(); const t = document.getElementById("tab-" + el.dataset.v); if (t) t.focus(); return; }
   if (act === "tab") { ui.tab = el.dataset.v; viewChapter(h.slice(3)); return; }
   if (act === "save") {
@@ -3789,6 +3801,30 @@ window.addEventListener("hashchange", () => {
   if (h === "wrong") { Object.keys(state.wrong).forEach((k) => delete ui.answers[k]); }
   render();
 });
+
+// ============ 顯示模式（跟隨系統／淺色／深色） ============
+const THEME_KEY = LS_KEY + "-theme";
+const THEME_ORDER = ["system", "light", "dark"];
+const THEME_LABEL = { system: "跟隨系統", light: "淺色", dark: "深色" };
+const THEME_ICON = { system: "◐", light: "☀", dark: "☾" };
+function getThemePref() { try { const v = localStorage.getItem(THEME_KEY); return THEME_ORDER.includes(v) ? v : "system"; } catch (e) { return "system"; } }
+function applyTheme(pref) {
+  const root = document.documentElement;
+  if (pref === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", pref);
+  const dark = pref === "dark" || (pref === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", dark ? "#111613" : "#2d5f4a");
+  const btn = document.getElementById("themeBtn");
+  if (btn) {
+    btn.firstElementChild.textContent = THEME_ICON[pref];
+    btn.setAttribute("aria-label", `顯示模式：${THEME_LABEL[pref]}（點擊切換）`);
+    btn.title = `顯示模式：${THEME_LABEL[pref]}`;
+  }
+  document.querySelectorAll("[data-act=themeset]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === pref));
+}
+function setThemePref(pref) { try { localStorage.setItem(THEME_KEY, pref); } catch (e) {} applyTheme(pref); }
+if (window.matchMedia) { const mq = window.matchMedia("(prefers-color-scheme: dark)"); const onChange = () => { if (getThemePref() === "system") applyTheme("system"); }; if (mq.addEventListener) mq.addEventListener("change", onChange); }
+applyTheme(getThemePref());
 
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); window.__installPrompt = e; const r = document.getElementById("installRow"); if (r) r.hidden = false; });
 loadLocal();
