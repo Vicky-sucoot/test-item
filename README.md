@@ -29,6 +29,10 @@ npm run dev
 
 開啟 <http://localhost:3000>。第一次啟動會自動建立 `data/app.db`，並載入預設主題章節、來源檢查表，以及 21 題自編示範題（四科各 5 題，另 1 題刻意不給答案，用來展示「缺少官方答案」）；其中 2 題重複收錄在第二份示範題組，用來展示重複標記，所以題庫共 23 筆。
 
+## 四科重點複習 App
+
+另一個獨立的單頁複習工具，位於 [review-app/](review-app/)：四科各 12 章，含重點、記憶卡與自編練習題。說明見 [review-app/README.md](review-app/README.md)。
+
 ## 線上示範版（直接開啟，不需安裝）
 
 - 網址：<https://claude.ai/artifact/RdaRuhRwZ595cV7hySucZ3>
