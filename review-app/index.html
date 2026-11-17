@@ -130,8 +130,27 @@ p { margin: 0; }
 .radios label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
 table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.mini th, table.mini td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
-table.mini td.num { font-variant-numeric: tabular-nums; }
+table.mini td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.mini th, table.mini td a { white-space: nowrap; }
 .tablewrap { overflow-x: auto; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 2px; }
+.tile b { font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile span { font-size: 13px; color: var(--muted); }
+.daychart { position: relative; display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; align-items: end; height: 160px; border-bottom: 1px solid var(--line); padding-top: 18px; }
+.daycol { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; border: 0; background: transparent; padding: 0; cursor: default; }
+.daycol .bar { width: 70%; max-width: 22px; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 0; }
+.daycol .tip { display: none; position: absolute; bottom: calc(100% - 14px); left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 2; pointer-events: none; }
+.daycol:hover .tip, .daycol:focus .tip { display: block; }
+.daycol.l .tip { left: 0; transform: none; }
+.daycol.r .tip { left: auto; right: 0; transform: none; }
+.daycol:hover .bar, .daycol:focus .bar { filter: brightness(1.15); }
+.daylabels { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.ymax { position: absolute; top: 0; left: 0; font-size: 11px; color: var(--muted); }
+.hbar { display: grid; grid-template-columns: 6.5em 1fr auto; gap: 8px 10px; align-items: center; font-size: 14px; }
+.hbar .track { height: 10px; background: var(--sunk); border-radius: 5px; overflow: hidden; }
+.hbar .track i { display: block; height: 100%; background: var(--accent); border-radius: 0 5px 5px 0; }
+.hbar .num { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; text-align: right; }
 .pbar i { display: block; height: 100%; background: var(--accent); }
 .checks { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 .checks label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
@@ -152,6 +171,7 @@ table.mini td.num { font-variant-numeric: tabular-nums; }
       <a href="#practice">練習</a>
       <a href="#saved">收藏</a>
       <a href="#wrong">錯題</a>
+      <a href="#stats">統計</a>
       <a href="#about">說明</a>
     </nav>
   </div>
@@ -2935,7 +2955,7 @@ const SECTIONS = [["core", "核心觀念"], ["exam", "常考重點"], ["confuse"
 
 // ============ 保存：登入 claude.ai 時存到個人帳號；否則存在本瀏覽器 ============
 const LS_KEY = "four-subject-review-v1";
-const empty = () => ({ v: 1, saved: {}, wrong: {}, done: {}, att: {}, exams: [], updatedAt: 0 });
+const empty = () => ({ v: 1, saved: {}, wrong: {}, done: {}, att: {}, exams: [], daily: {}, updatedAt: 0 });
 let state = empty();
 const cloud = { ref: null, status: "local" };
 let saveTimer = null, saving = false, again = false;
@@ -3028,7 +3048,7 @@ function render() {
   const base = h.startsWith("ch-") ? "home" : h === "exam" ? "practice" : h;
   document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + base ? "page" : "false"));
   if (h.startsWith("ch-")) return viewChapter(h.slice(3));
-  ({ home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, about: viewAbout }[h] || viewHome)();
+  ({ home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAbout }[h] || viewHome)();
 }
 
 function viewHome() {
@@ -3190,6 +3210,7 @@ function viewAbout() {
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
         <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
         <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
+        <li>「統計」頁顯示已練題數、正確率、連續學習天數、近 14 天作答量、各科進度、需要加強的章節與模擬測驗紀錄。</li>
       </ol>
     </section>
     <section class="card">
@@ -3375,6 +3396,12 @@ function recordAnswer(key, i) {
   const q = qOf(key).q;
   state.att = state.att || {};
   state.att[key] = i === q.a ? 1 : 0;
+  state.daily = state.daily || {};
+  const dk = dayKey(Date.now());
+  const d = state.daily[dk] || (state.daily[dk] = { n: 0, ok: 0 });
+  d.n++; if (i === q.a) d.ok++;
+  const days = Object.keys(state.daily).sort();
+  if (days.length > 90) days.slice(0, days.length - 90).forEach((k) => delete state.daily[k]);
   if (i === q.a) { if (state.wrong[key]) delete state.wrong[key]; }
   else { const w = state.wrong[key]; state.wrong[key] = { n: (w ? w.n : 0) + 1, chosen: i, last: Date.now() }; }
 }
@@ -3515,6 +3542,102 @@ function viewExamResult() {
         <p class="small">你的答案：${c === undefined ? "（未作答）" : esc(q.o[c])}</p>
         <div class="explain"><p class="verdict ok">正確答案：${esc(q.o[q.a])}</p><p>${esc(q.e)}</p></div>
       </section>`; }).join("") : `<div class="card empty">全部答對！</div>`}`;
+  window.scrollTo(0, 0);
+}
+
+// ============ 學習統計 ============
+function dayKey(t) { const d = new Date(t); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+function lastDays(n) { const out = []; const now = new Date(); for (let i = n - 1; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); out.push(dayKey(d.getTime())); } return out; }
+function streakDays() {
+  const daily = state.daily || {};
+  let n = 0; const now = new Date();
+  // 今天還沒練習時，從昨天開始算
+  let i = daily[dayKey(now.getTime())] ? 0 : 1;
+  for (;; i++) { const k = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i).getTime()); if (daily[k] && daily[k].n) n++; else break; }
+  return n;
+}
+
+function viewStats() {
+  const att = state.att || {};
+  const total = [...CHAPTERS.values()].reduce((a, c) => a + c.quiz.length, 0);
+  const done = Object.keys(att).filter((k) => qOf(k)).length;
+  const ok = Object.keys(att).filter((k) => qOf(k) && att[k] === 1).length;
+  const exams = state.exams || [];
+  const avg = exams.length ? Math.round(exams.reduce((a, x) => a + x.score, 0) / exams.length) : null;
+  const best = exams.length ? Math.max(...exams.map((x) => x.score)) : null;
+  const days = lastDays(14);
+  const daily = state.daily || {};
+  const vals = days.map((d) => (daily[d] ? daily[d] : { n: 0, ok: 0 }));
+  const max = Math.max(1, ...vals.map((v) => v.n));
+  const sum14 = vals.reduce((a, v) => a + v.n, 0);
+  const activeDays = vals.filter((v) => v.n).length;
+  const weak = [...CHAPTERS.values()].map((c) => ({ c, p: chapterProgress(c) })).filter((x) => x.p.done >= 3)
+    .map((x) => ({ ...x, rate: x.p.ok / x.p.done })).sort((a, b) => a.rate - b.rate || b.p.done - a.p.done).slice(0, 5);
+  const untouched = [...CHAPTERS.values()].filter((c) => chapterProgress(c).done === 0).length;
+  const pctTxt = (a, b) => (b ? Math.round((a / b) * 100) + "%" : "—");
+
+  $app.innerHTML = `
+    <h1>學習統計</h1>
+    <p class="muted small">依每題最近一次作答結果計算；章節練習、跨章節練習與模擬測驗都會計入。</p>
+    <section class="tiles" aria-label="總覽">
+      <div class="tile"><b>${done}<small class="muted" style="font-size:14px">／${total}</small></b><span>已練題數</span></div>
+      <div class="tile"><b>${ok}</b><span>目前答對題數</span></div>
+      <div class="tile"><b>${pctTxt(ok, done)}</b><span>正確率（已練題目）</span></div>
+      <div class="tile"><b>${Object.keys(state.wrong).length}</b><span>錯題清單</span></div>
+      <div class="tile"><b>${streakDays()} 天</b><span>連續學習</span></div>
+      <div class="tile"><b>${avg === null ? "—" : avg + " 分"}</b><span>模擬測驗平均（${exams.length} 次）</span></div>
+    </section>
+
+    <section class="card">
+      <div class="row"><h2>近 14 天作答題數</h2><span class="spacer"></span><span class="small muted">共 ${sum14} 題・${activeDays} 天有練習</span></div>
+      ${sum14 ? `
+      <div class="daychart" role="img" aria-label="近 14 天每日作答題數長條圖，最多 ${max} 題">
+        <span class="ymax">${max} 題</span>
+        ${days.map((d, i) => { const v = vals[i]; const h = (v.n / max) * 100; return `<button class="daycol ${i < 4 ? "l" : i > 9 ? "r" : ""}" type="button" aria-label="${d.slice(5).replace("-", "/")}：作答 ${v.n} 題，答對 ${v.ok} 題"><span class="bar" style="height:${h}%"></span><span class="tip">${d.slice(5).replace("-", "/")}・作答 ${v.n}・答對 ${v.ok}</span></button>`; }).join("")}
+      </div>
+      <div class="daylabels" aria-hidden="true">${days.map((d, i) => `<span>${i % 2 === 1 || i === days.length - 1 ? d.slice(5).replace("-", "/") : ""}</span>`).join("")}</div>
+      <details class="small"><summary>以表格檢視</summary>
+        <div class="tablewrap"><table class="mini"><thead><tr><th>日期</th><th>作答</th><th>答對</th><th>正確率</th></tr></thead><tbody>
+          ${days.map((d, i) => `<tr><td class="num">${d}</td><td class="num">${vals[i].n}</td><td class="num">${vals[i].ok}</td><td class="num">${pctTxt(vals[i].ok, vals[i].n)}</td></tr>`).join("")}
+        </tbody></table></div>
+      </details>` : `<div class="empty">近 14 天還沒有作答紀錄。到任一章節的「練習題」或「練習」頁開始作答，這裡就會出現每日題數。</div>`}
+    </section>
+
+    <section class="card">
+      <h2>各科進度</h2>
+      <p class="small muted">長條為答對題數占全科題數（240 題）的比例。</p>
+      <div style="display:grid;gap:12px">
+        ${SUBJECTS.map((sub) => { const sp = subjectProgress(sub); const dn = sub.chapters.reduce((a, c) => a + chapterProgress(c).done, 0); return `
+          <div class="hbar">
+            <span>${sub.name}</span>
+            <div class="track" role="progressbar" aria-label="${sub.name} 答對進度" aria-valuemin="0" aria-valuemax="${sp.total}" aria-valuenow="${sp.ok}"><i style="width:${(sp.ok / sp.total) * 100}%"></i></div>
+            <span class="num">${sp.ok}／${sp.total}</span>
+          </div>
+          <p class="small muted" style="margin-top:-8px">已練 ${dn} 題・正確率 ${pctTxt(sp.ok, dn)}</p>`; }).join("")}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>需要加強的章節</h2>
+      ${weak.length ? `<p class="small muted">已練 3 題以上的章節中，正確率最低的 ${weak.length} 章。</p>
+        <div class="tablewrap"><table class="mini"><thead><tr><th>章節</th><th>正確率</th><th>已練</th><th></th></tr></thead><tbody>
+          ${weak.map((x) => `<tr><td>${x.c.subject.name}・第 ${x.c.no} 章 ${esc(x.c.title)}</td><td class="num">${Math.round(x.rate * 100)}%</td><td class="num">${x.p.done}／${x.p.total}</td><td><a href="#ch-${x.c.id}">去複習</a></td></tr>`).join("")}
+        </tbody></table></div>` : `<div class="empty">累積更多作答後（每章至少 3 題），這裡會列出正確率最低的章節。</div>`}
+      <p class="small muted">尚未開始練習的章節：${untouched}／${CHAPTERS.size} 章。</p>
+    </section>
+
+    <section class="card">
+      <div class="row"><h2>模擬測驗紀錄</h2><span class="spacer"></span>${exams.length ? `<span class="small muted">平均 ${avg} 分・最高 ${best} 分</span>` : ""}</div>
+      ${exams.length ? `<div style="display:grid;gap:10px">
+        ${exams.slice().reverse().map((x) => `
+          <div class="hbar" style="grid-template-columns: 9.5em 1fr auto">
+            <span class="small">${fmtDate(x.at)} ${esc(x.name)}</span>
+            <div class="track" role="img" aria-label="${x.score} 分"><i style="width:${x.score}%"></i></div>
+            <span class="num">${x.score} 分（${x.right}/${x.total}）</span>
+          </div>`).join("")}
+        </div>` : `<div class="empty">還沒有模擬測驗紀錄。<a href="#practice">到「練習」頁開始整科模擬測驗</a>。</div>`}
+    </section>
+    <p class="syncnote" data-sync>${syncText()}</p>`;
   window.scrollTo(0, 0);
 }
 
