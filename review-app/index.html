@@ -115,6 +115,23 @@ p { margin: 0; }
 .empty { padding: 20px; text-align: center; color: var(--muted); }
 .progress { font-variant-numeric: tabular-nums; }
 .pbar { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.chprog { display: grid; gap: 3px; margin-top: 4px; }
+.chprog .pbar i { background: var(--subj, var(--accent)); }
+.qnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; }
+.qnav button { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; font-variant-numeric: tabular-nums; color: var(--fg); font: inherit; font-size: 13px; }
+.qnav button.ans { background: var(--accent-soft); border-color: var(--accent); }
+.qnav button.cur { outline: 2px solid var(--accent); outline-offset: 1px; }
+.qnav button.ok { background: var(--good-soft); border-color: var(--good); }
+.qnav button.ng { background: var(--bad-soft); border-color: var(--bad); }
+.timer { font-variant-numeric: tabular-nums; font-weight: 700; padding: 4px 10px; border-radius: 8px; background: var(--fg); color: var(--bg); }
+.timer.low { background: var(--bad); color: #fff; }
+.opt.pick { border-color: var(--accent); background: var(--accent-soft); }
+.radios { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.radios label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
+table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.mini th, table.mini td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+table.mini td.num { font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
 .pbar i { display: block; height: 100%; background: var(--accent); }
 .checks { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 .checks label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
@@ -2918,7 +2935,7 @@ const SECTIONS = [["core", "核心觀念"], ["exam", "常考重點"], ["confuse"
 
 // ============ 保存：登入 claude.ai 時存到個人帳號；否則存在本瀏覽器 ============
 const LS_KEY = "four-subject-review-v1";
-const empty = () => ({ v: 1, saved: {}, wrong: {}, done: {}, updatedAt: 0 });
+const empty = () => ({ v: 1, saved: {}, wrong: {}, done: {}, att: {}, exams: [], updatedAt: 0 });
 let state = empty();
 const cloud = { ref: null, status: "local" };
 let saveTimer = null, saving = false, again = false;
@@ -2988,12 +3005,30 @@ function pointHtml(ch, sec, i, p) {
     ${srcHtml(p)}</div>`;
 }
 
+// ============ 進度 ============
+function chapterProgress(ch) {
+  const att = state.att || {};
+  let done = 0, ok = 0;
+  ch.quiz.forEach((_, i) => { const v = att[`${ch.id}:${i}`]; if (v !== undefined) { done++; if (v === 1) ok++; } });
+  return { done, ok, total: ch.quiz.length };
+}
+function subjectProgress(sub) {
+  return sub.chapters.reduce((a, c) => { const p = chapterProgress(c); return { ok: a.ok + p.ok, total: a.total + p.total }; }, { ok: 0, total: 0 });
+}
+function progHtml(p, label = true) {
+  const w = p.total ? (p.ok / p.total) * 100 : 0;
+  return `<div class="chprog">${label ? `<span class="small muted">答對 ${p.ok}／${p.total} 題・已練 ${p.done}／${p.total}</span>` : ""}
+    <div class="pbar" role="progressbar" aria-label="答對進度" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.ok}"><i style="width:${w}%"></i></div></div>`;
+}
+
+let examTick = null;
 function render() {
+  clearInterval(examTick); examTick = null;
   const h = (location.hash || "#home").slice(1) || "home";
-  const base = h.startsWith("ch-") ? "home" : h;
+  const base = h.startsWith("ch-") ? "home" : h === "exam" ? "practice" : h;
   document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + base ? "page" : "false"));
   if (h.startsWith("ch-")) return viewChapter(h.slice(3));
-  ({ home: viewHome, practice: viewPractice, saved: viewSaved, wrong: viewWrong, about: viewAbout }[h] || viewHome)();
+  ({ home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, about: viewAbout }[h] || viewHome)();
 }
 
 function viewHome() {
@@ -3015,11 +3050,11 @@ function viewHome() {
     </section>
     ${SUBJECTS.map((s) => `
       <section class="card subject" style="--subj:${s.color}">
-        <h2>${s.name}</h2>
+        <div class="row"><h2>${s.name}</h2><span class="spacer"></span>${(() => { const sp = subjectProgress(s); return `<span class="small muted">答對 ${sp.ok}／${sp.total}（${sp.total ? Math.round((sp.ok / sp.total) * 100) : 0}%）</span>`; })()}</div>
         <div class="chlist">
           ${s.chapters.map((c, i) => { const d = state.done[c.id]; return `
             <a class="chlink" href="#ch-${c.id}" style="--subj:${s.color}">
-              <span class="n">第 ${i + 1} 章</span><span style="min-width:0">${esc(c.title)}<br><span class="small muted">記憶卡 ${c.cards.length}・自編題 ${c.quiz.length}</span></span>
+              <span class="n">第 ${i + 1} 章</span><span style="min-width:0;flex:1">${esc(c.title)}<br><span class="small muted">記憶卡 ${c.cards.length}・自編題 ${c.quiz.length}</span>${progHtml(chapterProgress(c))}</span>
               ${d ? `<span class="chip self">練習 ${d.correct}/${d.total}</span>` : ""}
               <span class="arrow">›</span></a>`; }).join("")}
         </div>
@@ -3058,6 +3093,7 @@ function viewChapter(id) {
     <section style="display:grid;gap:4px;--subj:${s.color}">
       <span class="small" style="color:${s.color};font-weight:700">${s.name}・第 ${ch.no} 章</span>
       <h1>${esc(ch.title)}</h1>
+      <div id="chprog">${progHtml(chapterProgress(ch))}</div>
     </section>
     <div class="seg" role="tablist" aria-label="章節內容">
       ${[["points", "重點"], ["cards", `記憶卡 ${ch.cards.length}`], ["quiz", `練習題 ${ch.quiz.length}`]].map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
@@ -3152,6 +3188,8 @@ function viewAbout() {
         <li>「記憶卡」點一下翻面。</li>
         <li>「練習題」選一個答案後立刻顯示答案與解析；答錯的題目會出現在「錯題」。</li>
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
+        <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
+        <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
       </ol>
     </section>
     <section class="card">
@@ -3217,6 +3255,25 @@ function viewPracticeSetup() {
         <button class="btn primary" data-act="startrandom" style="align-self:end">開始隨機練習</button>
       </div>
       <p class="small" id="rp-msg" role="status"></p>
+    </section>
+    <section class="card">
+      <h2>整科模擬測驗</h2>
+      <p class="small muted">選一個科目，題目平均分配到該科 12 章；作答中不顯示答案，交卷後才看成績與解析。時間到會自動交卷。</p>
+      <div class="radios" role="radiogroup" aria-label="測驗科目">${SUBJECTS.map((s, i) => `<label><input type="radio" name="ex-subj" value="${s.key}" ${i === 0 ? "checked" : ""}> ${s.name}</label>`).join("")}</div>
+      <div class="row">
+        <label class="field" for="ex-count">題數
+          <select id="ex-count">${[24, 36, 50, 60].map((n) => `<option value="${n}" ${n === 50 ? "selected" : ""}>${n} 題</option>`).join("")}</select>
+        </label>
+        <label class="field" for="ex-time">時間
+          <select id="ex-time">${[[0, "不限時"], [30, "30 分鐘"], [45, "45 分鐘"], [60, "60 分鐘"], [90, "90 分鐘"]].map(([v, l]) => `<option value="${v}" ${v === 60 ? "selected" : ""}>${l}</option>`).join("")}</select>
+        </label>
+        <span class="spacer"></span>
+        <button class="btn primary" data-act="examstart" style="align-self:end">開始模擬測驗</button>
+      </div>
+      ${ui.exam && !ui.exam.done ? `<p class="note small">你有一份尚未交卷的測驗（${esc(ui.exam.title)}）。<a href="#exam">繼續作答</a></p>` : ""}
+      ${(state.exams || []).length ? `<div class="tablewrap"><table class="mini"><thead><tr><th>時間</th><th>科目</th><th>成績</th><th>用時</th></tr></thead><tbody>
+        ${state.exams.slice(-5).reverse().map((x) => `<tr><td class="num">${fmtDate(x.at)}</td><td>${esc(x.name)}</td><td class="num">${x.score} 分（${x.right}/${x.total}）</td><td class="num">${fmtDur(x.used)}</td></tr>`).join("")}
+      </tbody></table></div>` : ""}
     </section>
     <section class="card">
       <h2>只練錯題</h2>
@@ -3316,11 +3373,150 @@ function viewSessResult() {
 
 function recordAnswer(key, i) {
   const q = qOf(key).q;
+  state.att = state.att || {};
+  state.att[key] = i === q.a ? 1 : 0;
   if (i === q.a) { if (state.wrong[key]) delete state.wrong[key]; }
   else { const w = state.wrong[key]; state.wrong[key] = { n: (w ? w.n : 0) + 1, chosen: i, last: Date.now() }; }
 }
 
 function selectedSubjects(prefix) { return SUBJECTS.map((s) => s.key).filter((k) => { const el = document.getElementById(`${prefix}-${k}`); return el && el.checked; }); }
+
+// ============ 整科模擬測驗 ============
+const EXAM_KEY = LS_KEY + "-exam";
+const fmtDate = (t) => { const d = new Date(t); const p = (n) => String(n).padStart(2, "0"); return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const fmtDur = (sec) => `${Math.floor(sec / 60)} 分 ${String(sec % 60).padStart(2, "0")} 秒`;
+const fmtClock = (sec) => { const m = Math.floor(sec / 60), x = sec % 60; return `${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; };
+function saveExam() { try { if (ui.exam) localStorage.setItem(EXAM_KEY, JSON.stringify(ui.exam)); else localStorage.removeItem(EXAM_KEY); } catch (e) {} }
+function loadExam() { try { const v = JSON.parse(localStorage.getItem(EXAM_KEY) || "null"); if (v && Array.isArray(v.keys) && v.keys.every((k) => qOf(k))) ui.exam = v; } catch (e) {} }
+
+/** 依章節平均分配題數（每章不超過該章題數），再從各章隨機抽題 */
+function buildExamKeys(sub, count) {
+  const chs = sub.chapters;
+  const base = Math.floor(count / chs.length);
+  let extra = count - base * chs.length;
+  const order = shuffleArr(chs.map((_, i) => i));
+  const per = chs.map(() => base);
+  for (const i of order) { if (extra <= 0) break; per[i]++; extra--; }
+  const keys = [];
+  chs.forEach((c, i) => { shuffleArr(c.quiz.map((_, k) => k)).slice(0, Math.min(per[i], c.quiz.length)).forEach((k) => keys.push(`${c.id}:${k}`)); });
+  return shuffleArr(keys);
+}
+
+function startExam(subKey, count, minutes) {
+  const sub = SUBJECTS.find((s) => s.key === subKey);
+  const keys = buildExamKeys(sub, count);
+  ui.exam = {
+    subject: subKey, title: `${sub.name}・整科模擬測驗`, keys, idx: 0, answers: {}, perm: {},
+    startedAt: Date.now(), limitMin: minutes, deadline: minutes ? Date.now() + minutes * 60000 : null, done: false, confirm: false,
+  };
+  saveExam();
+  if (location.hash !== "#exam") location.hash = "exam"; else viewExam();
+}
+
+function examLeft() { const x = ui.exam; return x && x.deadline ? Math.max(0, Math.ceil((x.deadline - Date.now()) / 1000)) : null; }
+
+function submitExam(auto) {
+  const x = ui.exam; if (!x || x.done) return;
+  let right = 0;
+  x.keys.forEach((k) => {
+    const c = x.answers[k];
+    if (c === undefined) return; // 未作答：計為答錯，但不加入錯題清單
+    if (c === qOf(k).q.a) right++;
+    recordAnswer(k, c);
+  });
+  x.done = true; x.auto = !!auto; x.submittedAt = Date.now();
+  x.used = Math.round((Math.min(x.submittedAt, x.deadline || x.submittedAt) - x.startedAt) / 1000);
+  x.right = right; x.score = Math.round((right / x.keys.length) * 100);
+  state.exams = (state.exams || []).concat([{ at: x.submittedAt, name: SUBJECTS.find((s) => s.key === x.subject).name, right, total: x.keys.length, score: x.score, used: x.used }]).slice(-20);
+  persist(); saveExam();
+}
+
+function viewExam() {
+  const x = ui.exam;
+  if (!x) { location.hash = "practice"; return; }
+  if (!x.done && x.deadline && Date.now() >= x.deadline) submitExam(true);
+  if (x.done) return viewExamResult();
+  x.idx = Math.min(Math.max(x.idx, 0), x.keys.length - 1);
+  const key = x.keys[x.idx];
+  const { ch, q } = qOf(key);
+  if (!x.perm[key]) x.perm[key] = shuffleArr([...Array(q.o.length).keys()]);
+  const perm = x.perm[key];
+  const chosen = x.answers[key];
+  const answered = Object.keys(x.answers).length;
+  const left = examLeft();
+  $app.innerHTML = `
+    <p class="crumb">練習 › 整科模擬測驗</p>
+    <section style="display:grid;gap:6px">
+      <div class="row"><h1 style="font-size:20px">${esc(x.title)}</h1><span class="spacer"></span>${left !== null ? `<span class="timer ${left <= 300 ? "low" : ""}" id="exam-timer" role="timer" aria-label="剩餘時間">${fmtClock(left)}</span>` : `<span class="small muted">不限時</span>`}</div>
+      <p class="progress small">第 ${x.idx + 1}／${x.keys.length} 題・已作答 ${answered}／${x.keys.length}</p>
+      <div class="pbar"><i style="width:${(answered / x.keys.length) * 100}%"></i></div>
+    </section>
+    <section class="card" style="--subj:${ch.subject.color}">
+      <div class="row small"><span class="chip self">自編練習題</span><span class="muted">第 ${ch.no} 章・${esc(ch.title)}</span></div>
+      <p style="font-weight:500">${esc(q.q)}</p>
+      <div class="opts">${perm.map((k, pos) => `<button class="opt ${chosen === k ? "pick" : ""}" data-act="expick" data-i="${k}" aria-pressed="${chosen === k}"><b>(${KEYS[pos]})</b><span>${esc(q.o[k])}</span></button>`).join("")}</div>
+      <p class="small muted">交卷前可以更改答案；作答中不顯示對錯。</p>
+    </section>
+    <div class="row">
+      <button class="btn" data-act="exprev" ${x.idx === 0 ? "disabled" : ""}>上一題</button>
+      <button class="btn" data-act="exnext" ${x.idx === x.keys.length - 1 ? "disabled" : ""}>下一題</button>
+      <span class="spacer"></span>
+      <button class="btn primary" data-act="exsubmit">交卷</button>
+    </div>
+    ${x.confirm ? `<div class="note"><p>還有 <b>${x.keys.length - answered}</b> 題未作答，未作答的題目計為答錯。確定交卷？</p><div class="row" style="margin-top:6px"><button class="btn sm primary" data-act="exsubmityes">確定交卷</button><button class="btn sm" data-act="exsubmitno">繼續作答</button></div></div>` : ""}
+    <section class="card">
+      <h3>題號</h3>
+      <div class="qnav">${x.keys.map((k, i) => `<button data-act="exgo" data-i="${i}" class="${x.answers[k] !== undefined ? "ans" : ""} ${i === x.idx ? "cur" : ""}" aria-label="第 ${i + 1} 題${x.answers[k] !== undefined ? "（已作答）" : ""}">${i + 1}</button>`).join("")}</div>
+    </section>`;
+  if (left !== null) {
+    clearInterval(examTick);
+    examTick = setInterval(() => {
+      const l = examLeft();
+      const el = document.getElementById("exam-timer");
+      if (el) { el.textContent = fmtClock(l); el.classList.toggle("low", l <= 300); }
+      if (l <= 0) { clearInterval(examTick); submitExam(true); viewExamResult(); }
+    }, 1000);
+  }
+}
+
+function viewExamResult() {
+  const x = ui.exam;
+  const sub = SUBJECTS.find((s) => s.key === x.subject);
+  const byCh = new Map();
+  x.keys.forEach((k) => { const { ch, q } = qOf(k); const b = byCh.get(ch.id) || { ch, t: 0, r: 0 }; b.t++; if (x.answers[k] === q.a) b.r++; byCh.set(ch.id, b); });
+  const wrongs = x.keys.filter((k) => x.answers[k] !== qOf(k).q.a);
+  const unanswered = x.keys.filter((k) => x.answers[k] === undefined).length;
+  $app.innerHTML = `
+    <p class="crumb"><a href="#practice">練習</a> › 模擬測驗結果</p>
+    <h1>${esc(x.title)}：成績</h1>
+    <section class="card">
+      <div class="stats3">
+        <div class="stat"><b>${x.score} 分</b><span>成績（滿分 100）</span></div>
+        <div class="stat"><b>${x.right}／${x.keys.length}</b><span>答對題數</span></div>
+        <div class="stat"><b>${fmtDur(x.used)}</b><span>${x.limitMin ? `用時（限 ${x.limitMin} 分）` : "用時"}</span></div>
+      </div>
+      <p class="small muted">${x.auto ? "時間到，系統已自動交卷。" : "已交卷。"}${unanswered ? `未作答 ${unanswered} 題，計為答錯（未加入錯題清單）。` : ""}答錯的題目已加入錯題清單。</p>
+      <div class="row">
+        ${wrongs.length ? `<button class="btn primary" data-act="exretry">重練本次答錯的 ${wrongs.length} 題</button>` : ""}
+        <button class="btn" data-act="exagain">同科目再測一次</button>
+        <a class="btn" href="#practice">回練習</a>
+      </div>
+    </section>
+    <section class="card">
+      <h2>各章成績</h2>
+      <div class="tablewrap"><table class="mini"><thead><tr><th>章節</th><th>答對</th><th>正確率</th></tr></thead><tbody>
+        ${sub.chapters.filter((c) => byCh.has(c.id)).map((c) => { const b = byCh.get(c.id); return `<tr><td><a href="#ch-${c.id}">第 ${c.no} 章 ${esc(c.title)}</a></td><td class="num">${b.r}/${b.t}</td><td class="num">${Math.round((b.r / b.t) * 100)}%</td></tr>`; }).join("")}
+      </tbody></table></div>
+    </section>
+    ${wrongs.length ? `<h2>答錯與未作答的題目</h2>` + wrongs.map((k) => { const { ch, q } = qOf(k); const c = x.answers[k]; return `
+      <section class="card" style="--subj:${ch.subject.color}">
+        <p class="small"><a href="#ch-${ch.id}" style="color:${ch.subject.color}">第 ${ch.no} 章・${esc(ch.title)}</a></p>
+        <p style="font-weight:500">${esc(q.q)}</p>
+        <p class="small">你的答案：${c === undefined ? "（未作答）" : esc(q.o[c])}</p>
+        <div class="explain"><p class="verdict ok">正確答案：${esc(q.o[q.a])}</p><p>${esc(q.e)}</p></div>
+      </section>`; }).join("") : `<div class="card empty">全部答對！</div>`}`;
+  window.scrollTo(0, 0);
+}
 
 // ============ 事件 ============
 document.addEventListener("click", (e) => {
@@ -3345,8 +3541,8 @@ document.addEventListener("click", (e) => {
     if (ui.answers[key] !== undefined) return;
     ui.answers[key] = i;
     const [cid, qi] = key.split(":"); const ch = CHAPTERS.get(cid); const q = ch.quiz[qi];
-    if (i === q.a) { if (state.wrong[key]) delete state.wrong[key]; }
-    else { const w = state.wrong[key]; state.wrong[key] = { n: (w ? w.n : 0) + 1, chosen: i, last: Date.now() }; }
+    recordAnswer(key, i);
+    const cp = document.getElementById("chprog"); if (cp) cp.innerHTML = progHtml(chapterProgress(ch));
     const answered = ch.quiz.filter((_, k) => ui.answers[`${cid}:${k}`] !== undefined);
     if (answered.length === ch.quiz.length) state.done[cid] = { correct: ch.quiz.filter((qq, k) => ui.answers[`${cid}:${k}`] === qq.a).length, total: ch.quiz.length, at: Date.now() };
     persist();
@@ -3389,9 +3585,23 @@ document.addEventListener("click", (e) => {
   if (act === "sretry") { const s = ui.sess; startSess("retry", shuffleArr(s.keys.filter((k) => s.answers[k] !== undefined && s.answers[k] !== qOf(k).q.a)), "重練本次答錯的題目"); return; }
   if (act === "snew") { ui.sess = null; saveSess(); viewPracticeSetup(); return; }
   if (act === "sessquit") { e.preventDefault(); ui.sess.done = true; saveSess(); viewSessResult(); return; }
+  if (act === "examstart") {
+    const sel = document.querySelector('input[name="ex-subj"]:checked');
+    startExam(sel ? sel.value : SUBJECTS[0].key, Number(document.getElementById("ex-count").value) || 50, Number(document.getElementById("ex-time").value) || 0);
+    return;
+  }
+  if (act === "expick") { const x = ui.exam; if (!x || x.done) return; if (x.deadline && Date.now() >= x.deadline) { submitExam(true); viewExamResult(); return; } x.answers[x.keys[x.idx]] = Number(el.dataset.i); x.confirm = false; saveExam(); viewExam(); return; }
+  if (act === "exprev") { ui.exam.idx--; ui.exam.confirm = false; saveExam(); viewExam(); window.scrollTo(0, 0); return; }
+  if (act === "exnext") { ui.exam.idx++; ui.exam.confirm = false; saveExam(); viewExam(); window.scrollTo(0, 0); return; }
+  if (act === "exgo") { ui.exam.idx = Number(el.dataset.i); ui.exam.confirm = false; saveExam(); viewExam(); window.scrollTo(0, 0); return; }
+  if (act === "exsubmit") { const x = ui.exam; if (Object.keys(x.answers).length < x.keys.length) { x.confirm = true; viewExam(); return; } submitExam(false); viewExamResult(); return; }
+  if (act === "exsubmityes") { submitExam(false); viewExamResult(); return; }
+  if (act === "exsubmitno") { ui.exam.confirm = false; viewExam(); return; }
+  if (act === "exretry") { const x = ui.exam; startSess("retry", shuffleArr(x.keys.filter((k) => x.answers[k] !== undefined && x.answers[k] !== qOf(k).q.a)), "重練模擬測驗答錯的題目"); return; }
+  if (act === "exagain") { const x = ui.exam; startExam(x.subject, x.keys.length, x.limitMin); return; }
   if (act === "clear") { document.getElementById("clearConfirm").hidden = false; return; }
   if (act === "clearno") { document.getElementById("clearConfirm").hidden = true; return; }
-  if (act === "clearyes") { state = empty(); ui.answers = {}; ui.sess = null; saveSess(); persist(); viewAbout(); return; }
+  if (act === "clearyes") { state = empty(); ui.answers = {}; ui.sess = null; ui.exam = null; saveSess(); saveExam(); persist(); viewAbout(); return; }
 });
 window.addEventListener("hashchange", () => {
   const h = (location.hash || "").slice(1);
@@ -3402,6 +3612,7 @@ window.addEventListener("hashchange", () => {
 
 loadLocal();
 loadSess();
+loadExam();
 render();
 initCloud();
 </script>
