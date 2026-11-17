@@ -17,6 +17,7 @@ export function openDb(file = dbPath()): Database.Database {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA_SQL);
+  migrate(db);
   const hasTopics = db.prepare("SELECT COUNT(*) n FROM topics").get() as { n: number };
   if (hasTopics.n === 0) {
     db.transaction(() => {
@@ -25,6 +26,17 @@ export function openDb(file = dbPath()): Database.Database {
     })();
   }
   return db;
+}
+
+/** 為舊版資料庫補上新欄位（第二階段：模擬考） */
+function migrate(db: Database.Database) {
+  const cols = new Set((db.prepare("PRAGMA table_info(attempts)").all() as { name: string }[]).map((c) => c.name));
+  const add: [string, string][] = [
+    ["time_limit_sec", "INTEGER"],
+    ["deadline_ms", "INTEGER"],
+    ["submit_reason", "TEXT"],
+  ];
+  for (const [name, type] of add) if (!cols.has(name)) db.exec(`ALTER TABLE attempts ADD COLUMN ${name} ${type}`);
 }
 
 export function db(): Database.Database {

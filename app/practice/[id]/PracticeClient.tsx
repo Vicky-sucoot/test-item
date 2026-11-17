@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { answerAction, submitAction, toggleBookmarkAction } from "../../actions";
 
@@ -38,11 +38,13 @@ export default function PracticeClient({
   title,
   instant,
   questions,
+  exam,
 }: {
   attemptId: number;
   title: string;
   instant: boolean;
   questions: PracticeQuestion[];
+  exam?: { deadlineMs: number; serverNow: number; limitSec: number } | null;
 }) {
   const [idx, setIdx] = useState(() => {
     const first = questions.findIndex((q) => !q.chosen);
@@ -60,6 +62,17 @@ export default function PracticeClient({
   const [error, setError] = useState<string | null>(null);
   const [showGrid, setShowGrid] = useState(false);
   const [pending, start] = useTransition();
+  const remaining = useCountdown(exam ?? null);
+  const autoSubmitted = useRef(false);
+  const timeUp = remaining !== null && remaining <= 0;
+
+  useEffect(() => {
+    if (!timeUp || autoSubmitted.current) return;
+    autoSubmitted.current = true;
+    start(async () => {
+      await submitAction(attemptId, "TIMEOUT");
+    });
+  }, [timeUp, attemptId]);
 
   if (!questions.length) {
     return (
@@ -75,7 +88,7 @@ export default function PracticeClient({
   const locked = instant && !!reveal;
 
   function choose(k: string) {
-    if (locked || pending) return;
+    if (locked || pending || timeUp) return;
     const prev = chosen[q.seq];
     const next = prev === k && !instant ? null : k;
     setChosen((c) => ({ ...c, [q.seq]: next }));
@@ -95,7 +108,7 @@ export default function PracticeClient({
     const unanswered = questions.length - answeredCount;
     if (unanswered > 0 && !confirm(`還有 ${unanswered} 題未作答，確定要交卷嗎？`)) return;
     start(async () => {
-      await submitAction(attemptId);
+      await submitAction(attemptId, "MANUAL");
     });
   }
 
@@ -114,13 +127,33 @@ export default function PracticeClient({
         <div>
           <h1 className="font-semibold">{title}</h1>
           <p className="text-xs muted">
-            已作答 {answeredCount} / {questions.length}　{instant ? "即時回饋模式" : "交卷後看答案"}
+            已作答 {answeredCount} / {questions.length}　{exam ? "限時模擬考" : instant ? "即時回饋模式" : "交卷後看答案"}
           </p>
         </div>
+        {remaining !== null && (
+          <div
+            role="timer"
+            suppressHydrationWarning
+            aria-live="off"
+            className={`rounded-lg px-3 py-1.5 font-mono text-lg font-bold tabular-nums ${
+              remaining <= 300 ? "bg-red-600 text-white" : "bg-slate-800 text-white"
+            }`}
+            title="剩餘時間"
+          >
+            ⏱ {fmt(remaining)}
+          </div>
+        )}
         <button className="btn btn-outline btn-sm" onClick={() => setShowGrid((s) => !s)}>
           題號盤 ▦
         </button>
       </div>
+
+      {timeUp && (
+        <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">時間到，正在自動交卷…</p>
+      )}
+      {remaining !== null && remaining > 0 && remaining <= 300 && (
+        <p className="rounded-lg bg-red-50 p-2 text-xs text-red-800">剩不到 5 分鐘，時間到會自動交卷。</p>
+      )}
 
       {showGrid && (
         <div className="card grid grid-cols-8 gap-1.5 sm:grid-cols-12">
@@ -183,7 +216,7 @@ export default function PracticeClient({
               <button
                 key={k}
                 onClick={() => choose(k)}
-                disabled={locked}
+                disabled={locked || timeUp}
                 className={`flex w-full gap-2 rounded-lg border px-3 py-3 text-left text-sm transition ${cls}`}
               >
                 <span className="font-semibold">{label(k, q.optionStyle)}</span>
@@ -218,16 +251,47 @@ export default function PracticeClient({
       </article>
 
       <div className="sticky bottom-0 -mx-4 flex items-center gap-2 border-t bg-white/95 px-4 py-3 backdrop-blur" style={{ borderColor: "var(--line)" }}>
+        {remaining !== null && (
+          <span
+            suppressHydrationWarning
+            className={`font-mono text-sm font-bold tabular-nums ${remaining <= 300 ? "text-red-700" : ""}`}
+            aria-label="剩餘時間"
+          >
+            ⏱ {fmt(remaining)}
+          </span>
+        )}
         <button className="btn btn-outline" disabled={idx === 0} onClick={() => setIdx(idx - 1)}>
           上一題
         </button>
         <button className="btn btn-outline" disabled={idx === questions.length - 1} onClick={() => setIdx(idx + 1)}>
           下一題
         </button>
-        <button className="btn btn-primary ml-auto" onClick={submit} disabled={pending}>
+        <button className="btn btn-primary ml-auto" onClick={submit} disabled={pending || timeUp}>
           交卷
         </button>
       </div>
     </div>
   );
+}
+
+/** 依伺服器時間計算剩餘秒數（修正使用者電腦時鐘誤差） */
+function useCountdown(exam: { deadlineMs: number; serverNow: number } | null): number | null {
+  const [offset] = useState(() => (exam ? exam.serverNow - Date.now() : 0));
+  const calc = () => (exam ? Math.max(0, Math.ceil((exam.deadlineMs - (Date.now() + offset)) / 1000)) : null);
+  const [left, setLeft] = useState<number | null>(calc);
+  useEffect(() => {
+    if (!exam) return;
+    const t = setInterval(() => setLeft(calc()), 500);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exam?.deadlineMs]);
+  return left;
+}
+
+function fmt(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return h ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
 }

@@ -12,6 +12,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 const NAV = [
   { href: "/", label: "首頁" },
   { href: "/questions", label: "題庫" },
+  { href: "/exam", label: "模擬考" },
   { href: "/review", label: "錯題・收藏" },
   { href: "/stats", label: "統計" },
   { href: "/admin", label: "管理" },

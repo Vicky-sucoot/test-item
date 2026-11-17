@@ -2,6 +2,9 @@ import { db, now } from "./db";
 import { grade } from "./answer";
 import { nextWrongState, type WrongState } from "./wrongbook";
 
+/** 模擬考交卷寬限（毫秒）：網路延遲時，截止後短時間內的作答仍接受 */
+export const EXAM_GRACE_MS = 5000;
+
 export interface Attempt {
   id: number;
   mode: string;
@@ -14,6 +17,9 @@ export interface Attempt {
   answered: number | null;
   gradable: number | null;
   correct: number | null;
+  time_limit_sec: number | null;
+  deadline_ms: number | null;
+  submit_reason: string | null;
 }
 
 export interface AttemptItem {
@@ -61,6 +67,8 @@ export function saveAnswer(attemptId: number, seq: number, choice: string | null
   const d = db();
   const a = getAttempt(attemptId);
   if (!a || a.submitted_at) throw new Error("此次練習已交卷，無法再修改作答");
+  if (a.mode === "EXAM" && a.deadline_ms != null && Date.now() > a.deadline_ms + EXAM_GRACE_MS)
+    throw new Error("模擬考時間已到，無法再作答");
   const item = d.prepare("SELECT * FROM attempt_items WHERE attempt_id=? AND seq=?").get(attemptId, seq) as
     | AttemptItem
     | undefined;
@@ -102,7 +110,7 @@ export function applyWrongBook(questionId: number, isCorrect: boolean, at: strin
   }
 }
 
-export function submitAttempt(attemptId: number) {
+export function submitAttempt(attemptId: number, reason: "MANUAL" | "TIMEOUT" = "MANUAL") {
   const d = db();
   d.transaction(() => {
     const a = getAttempt(attemptId);
@@ -118,19 +126,23 @@ export function submitAttempt(attemptId: number) {
       const q = questionAnswer(it.question_id);
       if (!q) continue;
       if (it.chosen) answered++;
-      const g = it.chosen ? grade(it.chosen, q.official_answer, q.answer_status) : null;
+      let g = it.chosen ? grade(it.chosen, q.official_answer, q.answer_status) : null;
+      // 模擬考：未作答且有答案之題目計為答錯（但不加入錯題本）
+      const unansweredInExam = a.mode === "EXAM" && !it.chosen && grade("A", q.official_answer, q.answer_status) !== null;
+      if (unansweredInExam) g = false;
       upd.run(g === null ? null : g ? 1 : 0, attemptId, it.seq);
       if (g !== null) {
         gradable++;
         if (g) correct++;
-        applyWrongBook(it.question_id, g, at);
+        if (!unansweredInExam) applyWrongBook(it.question_id, g, at);
       }
     }
-    d.prepare("UPDATE attempts SET submitted_at=?, answered=?, gradable=?, correct=? WHERE id=?").run(
+    d.prepare("UPDATE attempts SET submitted_at=?, answered=?, gradable=?, correct=?, submit_reason=? WHERE id=?").run(
       at,
       answered,
       gradable,
       correct,
+      a.mode === "EXAM" ? reason : null,
       attemptId,
     );
   })();

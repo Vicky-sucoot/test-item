@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { attemptHistory, dailyStats, pct, subjectStats, topicStats } from "@/lib/stats";
+import { finalizeExpiredExams } from "@/lib/exam";
 import { subjectLabel } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-const MODE_LABEL: Record<string, string> = { PRACTICE: "練習", REVIEW: "錯題／收藏複習", RETRY_WRONG: "重練錯題" };
+const MODE_LABEL: Record<string, string> = { PRACTICE: "練習", REVIEW: "錯題／收藏複習", RETRY_WRONG: "重練錯題", EXAM: "模擬考" };
 
 function Bar({ value, total }: { value: number; total: number }) {
   const w = total ? Math.round((value / total) * 100) : 0;
@@ -16,6 +17,7 @@ function Bar({ value, total }: { value: number; total: number }) {
 }
 
 export default function StatsPage() {
+  finalizeExpiredExams();
   const subjects = subjectStats().filter((s) => s.subject !== "UNCLASSIFIED" || s.question_count > 0);
   const topics = topicStats();
   const history = attemptHistory();

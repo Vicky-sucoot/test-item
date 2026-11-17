@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { getAttempt, getAttemptItems } from "@/lib/practice";
+import { getAttempt, getAttemptItems, submitAttempt } from "@/lib/practice";
+import { isExpired } from "@/lib/exam";
 import { getQuestionsByIds } from "@/lib/questions";
 import { grade, formatAnswer } from "@/lib/answer";
 import { SOURCE_TYPE_SHORT, subjectLabel } from "@/lib/constants";
@@ -13,6 +14,10 @@ export default async function PracticePage({ params }: { params: Promise<{ id: s
   const attempt = getAttempt(id);
   if (!attempt) notFound();
   if (attempt.submitted_at) redirect(`/practice/${id}/result`);
+  if (isExpired(attempt)) {
+    submitAttempt(id, "TIMEOUT");
+    redirect(`/practice/${id}/result`);
+  }
   const items = getAttemptItems(id);
   const qs = getQuestionsByIds(items.map((i) => i.question_id));
   const questions: PracticeQuestion[] = items.flatMap((it) => {
@@ -55,6 +60,11 @@ export default async function PracticePage({ params }: { params: Promise<{ id: s
       title={attempt.title ?? "練習"}
       instant={!!attempt.instant_feedback}
       questions={questions}
+      exam={
+        attempt.mode === "EXAM" && attempt.deadline_ms
+          ? { deadlineMs: attempt.deadline_ms, serverNow: Date.now(), limitSec: attempt.time_limit_sec ?? 0 }
+          : null
+      }
     />
   );
 }

@@ -77,6 +77,14 @@ export default function Home() {
         })}
       </section>
 
+      <section className="card flex flex-wrap items-center gap-3">
+        <div className="flex-1">
+          <h2 className="h2">限時模擬考</h2>
+          <p className="text-sm muted">會計學＋貨幣銀行學 80 題／90 分鐘；票據法＋銀行法 50 題／60 分鐘</p>
+        </div>
+        <Link className="btn btn-primary" href="/exam">前往模擬考</Link>
+      </section>
+
       <section className="grid gap-3 sm:grid-cols-3">
         <Link href="/review" className="card hover:bg-slate-50">
           <div className="text-2xl font-bold">{totalWrong}</div>

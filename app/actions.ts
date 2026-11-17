@@ -7,6 +7,8 @@ import { createAttempt, getAttemptItems, saveAnswer, setWrongStatus, submitAttem
 import { formatAnswer } from "@/lib/answer";
 import { subjectLabel } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { EXAM_PRESETS, createExam } from "@/lib/exam";
+import { SOURCE_TYPES, SUBJECTS, type SourceType, type Subject } from "@/lib/constants";
 
 function titleFor(fd: FormData): string {
   const f = parseFilters(fd);
@@ -74,8 +76,8 @@ export async function answerAction(attemptId: number, seq: number, choice: strin
   }
 }
 
-export async function submitAction(attemptId: number) {
-  submitAttempt(attemptId);
+export async function submitAction(attemptId: number, reason: "MANUAL" | "TIMEOUT" = "MANUAL") {
+  submitAttempt(attemptId, reason === "TIMEOUT" ? "TIMEOUT" : "MANUAL");
   revalidatePath("/", "layout");
   redirect(`/practice/${attemptId}/result`);
 }
@@ -95,4 +97,31 @@ export async function setWrongStatusAction(fd: FormData) {
   const status = fd.get("status") === "FAMILIAR" ? "FAMILIAR" : "ACTIVE";
   setWrongStatus(Number(fd.get("questionId")), status);
   revalidatePath("/", "layout");
+}
+
+export async function startExamAction(fd: FormData) {
+  const preset = EXAM_PRESETS.find((p) => p.key === fd.get("preset"));
+  const sourceTypes = (fd.getAll("src") as string[]).filter((s): s is SourceType =>
+    (SOURCE_TYPES as readonly string[]).includes(s),
+  );
+  let name: string, subjects: Subject[], count: number, minutes: number;
+  if (preset) {
+    ({ name, subjects, count, minutes } = preset);
+  } else {
+    subjects = (fd.getAll("subject") as string[]).filter((s): s is Subject => (SUBJECTS as readonly string[]).includes(s));
+    count = Math.min(Math.max(Number(fd.get("count")) || 50, 1), 200);
+    minutes = Math.min(Math.max(Number(fd.get("minutes")) || 60, 1), 300);
+    name = "自訂";
+    if (!subjects.length) redirect("/exam?error=" + encodeURIComponent("請至少選擇一個科目"));
+  }
+  const { attemptId } = createExam({
+    name,
+    subjects,
+    count,
+    minutes,
+    sourceTypes: sourceTypes.length ? sourceTypes : [...SOURCE_TYPES],
+    excludeMissing: fd.get("include_missing") !== "1",
+  });
+  if (!attemptId) redirect("/exam?error=" + encodeURIComponent("所選條件沒有可出題的題目"));
+  redirect(`/practice/${attemptId}`);
 }

@@ -99,7 +99,10 @@ CREATE TABLE IF NOT EXISTS attempts (
   filters TEXT,
   started_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
   submitted_at TEXT,
-  total INTEGER, answered INTEGER, gradable INTEGER, correct INTEGER
+  total INTEGER, answered INTEGER, gradable INTEGER, correct INTEGER,
+  time_limit_sec INTEGER,                -- 模擬考時限
+  deadline_ms INTEGER,                   -- 模擬考截止時間（epoch 毫秒）
+  submit_reason TEXT                     -- MANUAL 手動交卷 / TIMEOUT 時間到自動交卷
 );
 
 CREATE TABLE IF NOT EXISTS attempt_items (
