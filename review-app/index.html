@@ -114,6 +114,16 @@ p { margin: 0; }
 .syncnote { font-size: 12px; color: var(--muted); }
 .empty { padding: 20px; text-align: center; color: var(--muted); }
 .progress { font-variant-numeric: tabular-nums; }
+.pbar { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--accent); }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.checks label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.field select { padding: 8px 10px; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); font: inherit; }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--sunk); border-radius: 10px; padding: 8px; text-align: center; }
+.stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .face { transition: none; } }
 </style>
 
@@ -122,6 +132,7 @@ p { margin: 0; }
     <a class="brand" href="#home">四科重點複習</a>
     <nav class="tabs" id="tabs" aria-label="主要頁面">
       <a href="#home">科目</a>
+      <a href="#practice">練習</a>
       <a href="#saved">收藏</a>
       <a href="#wrong">錯題</a>
       <a href="#about">說明</a>
@@ -2982,7 +2993,7 @@ function render() {
   const base = h.startsWith("ch-") ? "home" : h;
   document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + base ? "page" : "false"));
   if (h.startsWith("ch-")) return viewChapter(h.slice(3));
-  ({ home: viewHome, saved: viewSaved, wrong: viewWrong, about: viewAbout }[h] || viewHome)();
+  ({ home: viewHome, practice: viewPractice, saved: viewSaved, wrong: viewWrong, about: viewAbout }[h] || viewHome)();
 }
 
 function viewHome() {
@@ -2993,6 +3004,14 @@ function viewHome() {
       <h1>公股銀行四科重點複習</h1>
       <p class="muted">選一個章節，讀重點、翻記憶卡、做幾題自編練習。</p>
       <div class="row small"><span class="chip">收藏 ${savedN}</span><span class="chip">錯題 ${wrongN}</span><span class="chip pending">待核對 = 涉及法規或制度、尚未比對官方原文</span></div>
+    </section>
+    <section class="card">
+      <h2>練習</h2>
+      <p class="small muted">從各章節隨機出題，或集中練習答錯過的題目。</p>
+      <div class="row">
+        <a class="btn primary" href="#practice">跨章節隨機練習</a>
+        <button class="btn" data-act="startwrong" ${wrongN ? "" : "disabled"}>只練錯題（${wrongN} 題）</button>
+      </div>
     </section>
     ${SUBJECTS.map((s) => `
       <section class="card subject" style="--subj:${s.color}">
@@ -3108,6 +3127,7 @@ function viewWrong() {
   $app.innerHTML = `
     <h1>答錯的題目</h1>
     <p class="muted small">練習題答錯時會記錄在這裡；在下方重新作答，答對後會從清單移除。</p>
+    ${keys.length ? `<div class="row"><button class="btn primary" data-act="startwrong">只練錯題（${keys.length} 題，隨機順序）</button><a class="btn" href="#practice">依科目挑選</a></div>` : ""}
     ${keys.length ? keys.map((key) => {
       const [cid, i] = key.split(":"); const ch = CHAPTERS.get(cid); if (!ch) return "";
       const q = ch.quiz[i]; const w = state.wrong[key];
@@ -3131,6 +3151,7 @@ function viewAbout() {
         <li>「重點」分成核心觀念、常考重點、容易混淆之處、例子；按 ☆ 收藏。</li>
         <li>「記憶卡」點一下翻面。</li>
         <li>「練習題」選一個答案後立刻顯示答案與解析；答錯的題目會出現在「錯題」。</li>
+        <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
       </ol>
     </section>
     <section class="card">
@@ -3147,6 +3168,159 @@ function viewAbout() {
     </section>`;
   window.scrollTo(0, 0);
 }
+
+// ============ 跨章節練習與只練錯題 ============
+const SESS_KEY = LS_KEY + "-session";
+const PREF_KEY = LS_KEY + "-practice-prefs";
+const MODE_LABEL = { random: "跨章節隨機練習", wrong: "只練錯題", retry: "重練本次答錯的題目" };
+function shuffleArr(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function qOf(key) { const [cid, i] = String(key).split(":"); const ch = CHAPTERS.get(cid); const q = ch && ch.quiz[Number(i)]; return q ? { ch, q, i: Number(i) } : null; }
+function poolKeys(subjKeys) { const out = []; SUBJECTS.forEach((s) => { if (subjKeys.includes(s.key)) s.chapters.forEach((c) => c.quiz.forEach((_, i) => out.push(`${c.id}:${i}`))); }); return out; }
+function wrongKeys(subjKeys) { return Object.keys(state.wrong).filter((k) => { const x = qOf(k); return x && subjKeys.includes(x.ch.subject.key); }); }
+function saveSess() { try { if (ui.sess) localStorage.setItem(SESS_KEY, JSON.stringify(ui.sess)); else localStorage.removeItem(SESS_KEY); } catch (e) {} }
+function loadSess() { try { const v = JSON.parse(localStorage.getItem(SESS_KEY) || "null"); if (v && Array.isArray(v.keys)) { v.keys = v.keys.filter((k) => qOf(k)); ui.sess = v; } } catch (e) {} }
+function loadPrefs() { try { return Object.assign({ subjects: SUBJECTS.map((s) => s.key), count: 20 }, JSON.parse(localStorage.getItem(PREF_KEY) || "{}")); } catch (e) { return { subjects: SUBJECTS.map((s) => s.key), count: 20 }; } }
+function savePrefs(p) { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch (e) {} }
+function startSess(mode, keys, title) {
+  keys = keys.filter((k) => qOf(k));
+  if (!keys.length) return;
+  ui.sess = { mode, keys, idx: 0, answers: {}, perm: {}, title, done: false, startedAt: Date.now() };
+  saveSess();
+  if (location.hash !== "#practice") location.hash = "practice"; else viewPractice();
+}
+function subjNames(keys) { return SUBJECTS.filter((s) => keys.includes(s.key)).map((s) => s.name).join("、"); }
+
+function viewPractice() {
+  const s = ui.sess;
+  if (s && s.keys.length && !s.done) return viewSession();
+  if (s && s.done) return viewSessResult();
+  viewPracticeSetup();
+}
+
+function viewPracticeSetup() {
+  const pref = loadPrefs();
+  const wrongBy = Object.fromEntries(SUBJECTS.map((s) => [s.key, wrongKeys([s.key]).length]));
+  const wrongTotal = Object.values(wrongBy).reduce((a, b) => a + b, 0);
+  const checks = (prefix) => SUBJECTS.map((s) => `<label><input type="checkbox" id="${prefix}-${s.key}" value="${s.key}" ${pref.subjects.includes(s.key) ? "checked" : ""}> ${s.name}${prefix === "wp" ? `（${wrongBy[s.key]}）` : `（${poolKeys([s.key]).length}）`}</label>`).join("");
+  $app.innerHTML = `
+    <h1>練習</h1>
+    <p class="muted small">題目全部為自行編寫，非歷屆真題。練習中答錯的題目會加入「錯題」，答對錯題會自動移除。</p>
+    <section class="card">
+      <h2>跨章節隨機練習</h2>
+      <p class="small muted">從所選科目的全部章節中隨機抽題。</p>
+      <div class="checks" role="group" aria-label="隨機練習的科目">${checks("rp")}</div>
+      <div class="row">
+        <label class="field" for="rp-count">題數
+          <select id="rp-count">${[10, 20, 30, 50, 100].map((n) => `<option value="${n}" ${pref.count === n ? "selected" : ""}>${n} 題</option>`).join("")}</select>
+        </label>
+        <span class="spacer"></span>
+        <button class="btn primary" data-act="startrandom" style="align-self:end">開始隨機練習</button>
+      </div>
+      <p class="small" id="rp-msg" role="status"></p>
+    </section>
+    <section class="card">
+      <h2>只練錯題</h2>
+      <p class="small muted">目前錯題共 <b>${wrongTotal}</b> 題，以隨機順序出題。</p>
+      <div class="checks" role="group" aria-label="只練錯題的科目">${checks("wp")}</div>
+      <div class="row"><span class="spacer"></span><button class="btn primary" data-act="startwrongsel" ${wrongTotal ? "" : "disabled"}>開始只練錯題</button></div>
+      <p class="small" id="wp-msg" role="status"></p>
+    </section>
+    <p class="syncnote" data-sync>${syncText()}</p>`;
+  window.scrollTo(0, 0);
+}
+
+function sessPerm(key, n) {
+  const s = ui.sess;
+  if (!s.perm[key]) s.perm[key] = shuffleArr([...Array(n).keys()]);
+  return s.perm[key];
+}
+
+function sessStats() {
+  const s = ui.sess; let answered = 0, right = 0;
+  s.keys.forEach((k) => { const c = s.answers[k]; if (c !== undefined) { answered++; if (c === qOf(k).q.a) right++; } });
+  return { answered, right, total: s.keys.length };
+}
+
+function viewSession() {
+  const s = ui.sess;
+  s.idx = Math.min(Math.max(s.idx, 0), s.keys.length - 1);
+  const key = s.keys[s.idx];
+  const { ch, q } = qOf(key);
+  const chosen = s.answers[key];
+  const done = chosen !== undefined;
+  const perm = sessPerm(key, q.o.length);
+  const ansPos = perm.indexOf(q.a);
+  const st = sessStats();
+  const last = s.idx === s.keys.length - 1;
+  const w = state.wrong[key];
+  const opts = perm.map((k, pos) => {
+    let cls = "";
+    if (done && k === q.a) cls = "right"; else if (done && k === chosen) cls = "wrong";
+    return `<button class="opt ${cls}" data-act="sanswer" data-i="${k}" ${done ? "disabled" : ""}><b>(${KEYS[pos]})</b><span>${esc(q.o[k])}</span></button>`;
+  }).join("");
+  $app.innerHTML = `
+    <p class="crumb">練習 › ${esc(MODE_LABEL[s.mode] || "練習")}</p>
+    <section style="display:grid;gap:6px">
+      <h1 style="font-size:20px">${esc(s.title)}</h1>
+      <p class="progress small">第 ${s.idx + 1}／${s.keys.length} 題・已作答 ${st.answered}・答對 ${st.right}</p>
+      <div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${s.keys.length}" aria-valuenow="${st.answered}"><i style="width:${(st.answered / s.keys.length) * 100}%"></i></div>
+    </section>
+    <section class="card" style="--subj:${ch.subject.color}">
+      <div class="row small"><span class="chip self">自編練習題</span><a href="#ch-${ch.id}" style="color:${ch.subject.color}">${ch.subject.name}・${esc(ch.title)}</a>
+        ${s.mode !== "random" && w ? `<span class="chip">答錯 ${w.n} 次</span>` : ""}</div>
+      <p style="font-weight:500">${esc(q.q)}</p>
+      <div class="opts">${opts}</div>
+      ${done ? `<div class="explain"><p class="verdict ${chosen === q.a ? "ok" : "no"}">${chosen === q.a ? "答對了" : "答錯了"}　答案：(${KEYS[ansPos]}) ${esc(q.o[q.a])}</p><p>${esc(q.e)}</p>
+        ${chosen === q.a && s.mode !== "random" ? `<p class="small muted">已從錯題清單移除。</p>` : ""}${chosen !== q.a ? `<p class="small muted">已加入錯題清單。</p>` : ""}</div>` : ""}
+    </section>
+    <div class="row">
+      <button class="btn" data-act="sprev" ${s.idx === 0 ? "disabled" : ""}>上一題</button>
+      ${last ? `<button class="btn primary" data-act="sfinish">看結果</button>` : `<button class="btn primary" data-act="snext">下一題</button>`}
+      <span class="spacer"></span>
+      <button class="btn sm" data-act="sfinish">結束練習</button>
+    </div>`;
+}
+
+function viewSessResult() {
+  const s = ui.sess;
+  const st = sessStats();
+  const by = {};
+  s.keys.forEach((k) => { const c = s.answers[k]; if (c === undefined) return; const { ch, q } = qOf(k); const b = by[ch.subject.key] || (by[ch.subject.key] = { name: ch.subject.name, t: 0, r: 0 }); b.t++; if (c === q.a) b.r++; });
+  const wrongs = s.keys.filter((k) => s.answers[k] !== undefined && s.answers[k] !== qOf(k).q.a);
+  const pct = st.answered ? Math.round((st.right / st.answered) * 100) : 0;
+  $app.innerHTML = `
+    <p class="crumb"><a href="#practice">練習</a> › 結果</p>
+    <h1>${esc(s.title)}：結果</h1>
+    <section class="card">
+      <div class="stats3">
+        <div class="stat"><b>${st.answered}／${st.total}</b><span>已作答</span></div>
+        <div class="stat"><b>${st.right}</b><span>答對</span></div>
+        <div class="stat"><b>${st.answered ? pct + "%" : "—"}</b><span>正確率</span></div>
+      </div>
+      ${Object.keys(by).length ? `<div class="row small">${Object.values(by).map((b) => `<span class="chip">${b.name} ${b.r}/${b.t}</span>`).join("")}</div>` : ""}
+      <div class="row">
+        ${wrongs.length ? `<button class="btn primary" data-act="sretry">重練本次答錯的 ${wrongs.length} 題</button>` : ""}
+        <button class="btn" data-act="snew">新的練習</button>
+        <a class="btn" href="#wrong">錯題清單</a>
+      </div>
+    </section>
+    ${wrongs.length ? `<h2>本次答錯的題目</h2>` + wrongs.map((k) => { const { ch, q } = qOf(k); return `
+      <section class="card" style="--subj:${ch.subject.color}">
+        <p class="small"><a href="#ch-${ch.id}" style="color:${ch.subject.color}">${ch.subject.name}・${esc(ch.title)}</a></p>
+        <p style="font-weight:500">${esc(q.q)}</p>
+        <p class="small">你的答案：${esc(q.o[s.answers[k]])}</p>
+        <div class="explain"><p class="verdict ok">正確答案：${esc(q.o[q.a])}</p><p>${esc(q.e)}</p></div>
+      </section>`; }).join("") : `<div class="card empty">${st.answered ? "本次全部答對。" : "本次沒有作答。"}</div>`}`;
+  window.scrollTo(0, 0);
+}
+
+function recordAnswer(key, i) {
+  const q = qOf(key).q;
+  if (i === q.a) { if (state.wrong[key]) delete state.wrong[key]; }
+  else { const w = state.wrong[key]; state.wrong[key] = { n: (w ? w.n : 0) + 1, chosen: i, last: Date.now() }; }
+}
+
+function selectedSubjects(prefix) { return SUBJECTS.map((s) => s.key).filter((k) => { const el = document.getElementById(`${prefix}-${k}`); return el && el.checked; }); }
 
 // ============ 事件 ============
 document.addEventListener("click", (e) => {
@@ -3181,9 +3355,43 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (act === "resetquiz") { Object.keys(ui.answers).forEach((k) => { if (k.startsWith(el.dataset.ch + ":")) delete ui.answers[k]; }); viewChapter(el.dataset.ch); return; }
+  if (act === "startrandom") {
+    const subj = selectedSubjects("rp");
+    const count = Number(document.getElementById("rp-count").value) || 20;
+    if (!subj.length) { document.getElementById("rp-msg").textContent = "請至少選擇一個科目。"; return; }
+    savePrefs({ subjects: subj, count });
+    const pool = poolKeys(subj);
+    startSess("random", shuffleArr(pool).slice(0, Math.min(count, pool.length)), `跨章節隨機練習（${subjNames(subj)}）`);
+    return;
+  }
+  if (act === "startwrongsel") {
+    const subj = selectedSubjects("wp");
+    if (!subj.length) { document.getElementById("wp-msg").textContent = "請至少選擇一個科目。"; return; }
+    const keys = wrongKeys(subj);
+    if (!keys.length) { document.getElementById("wp-msg").textContent = "所選科目目前沒有錯題。"; return; }
+    startSess("wrong", shuffleArr(keys), `只練錯題（${subjNames(subj)}）`);
+    return;
+  }
+  if (act === "startwrong") { startSess("wrong", shuffleArr(wrongKeys(SUBJECTS.map((s) => s.key))), "只練錯題（全部科目）"); return; }
+  if (act === "sanswer") {
+    const s = ui.sess; if (!s) return;
+    const key = s.keys[s.idx];
+    if (s.answers[key] !== undefined) return;
+    const i = Number(el.dataset.i);
+    s.answers[key] = i;
+    recordAnswer(key, i);
+    persist(); saveSess(); viewSession();
+    return;
+  }
+  if (act === "snext") { ui.sess.idx++; saveSess(); viewSession(); window.scrollTo(0, 0); return; }
+  if (act === "sprev") { ui.sess.idx--; saveSess(); viewSession(); window.scrollTo(0, 0); return; }
+  if (act === "sfinish") { ui.sess.done = true; saveSess(); viewSessResult(); return; }
+  if (act === "sretry") { const s = ui.sess; startSess("retry", shuffleArr(s.keys.filter((k) => s.answers[k] !== undefined && s.answers[k] !== qOf(k).q.a)), "重練本次答錯的題目"); return; }
+  if (act === "snew") { ui.sess = null; saveSess(); viewPracticeSetup(); return; }
+  if (act === "sessquit") { e.preventDefault(); ui.sess.done = true; saveSess(); viewSessResult(); return; }
   if (act === "clear") { document.getElementById("clearConfirm").hidden = false; return; }
   if (act === "clearno") { document.getElementById("clearConfirm").hidden = true; return; }
-  if (act === "clearyes") { state = empty(); ui.answers = {}; persist(); viewAbout(); return; }
+  if (act === "clearyes") { state = empty(); ui.answers = {}; ui.sess = null; saveSess(); persist(); viewAbout(); return; }
 });
 window.addEventListener("hashchange", () => {
   const h = (location.hash || "").slice(1);
@@ -3193,6 +3401,7 @@ window.addEventListener("hashchange", () => {
 });
 
 loadLocal();
+loadSess();
 render();
 initCloud();
 </script>
