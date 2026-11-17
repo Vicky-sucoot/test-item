@@ -99,6 +99,14 @@ p { margin: 0; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); background: var(--sunk); white-space: nowrap; }
 .chip.pending { background: var(--pending-soft); color: var(--pending); border-color: transparent; font-weight: 700; }
 .chip.self { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.chip.pass { background: var(--good-soft); color: var(--good); border-color: transparent; font-weight: 700; }
+.chip.fail { background: var(--bad-soft); color: var(--bad); border-color: transparent; font-weight: 700; }
+.passbox { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; color: var(--fg); }
+.passbox.pass { background: var(--good-soft); }
+.passbox.fail { background: var(--bad-soft); }
+.passbox b { font-size: 16px; margin-right: 6px; }
+.passbox.pass b { color: var(--good); }
+.passbox.fail b { color: var(--bad); }
 .subject { border-top: 4px solid var(--subj); }
 .subject h2 { color: var(--subj); font-family: var(--font-display); font-size: 20px; }
 .chlist { display: grid; gap: 8px; }
@@ -5129,9 +5137,21 @@ function chapterProgress(ch) {
 function subjectProgress(sub) {
   return sub.chapters.reduce((a, c) => { const p = chapterProgress(c); return { ok: a.ok + p.ok, total: a.total + p.total }; }, { ok: 0, total: 0 });
 }
+// ============ 合格標準：各科練習、模擬測驗皆需答對 70% ============
+const PASS_PCT = 70;
+function passNeed(total) { return Math.ceil((total * PASS_PCT) / 100); }
+function isPass(right, total) { return total > 0 && right >= passNeed(total); }
+function passChip(right, total) { return isPass(right, total) ? `<span class="chip pass">✓ 合格</span>` : `<span class="chip fail">✗ 未合格</span>`; }
+function verdictHtml(right, total, note = "") {
+  if (!total) return "";
+  const need = passNeed(total), pct = Math.round((right / total) * 100);
+  return isPass(right, total)
+    ? `<p class="passbox pass" role="status"><b>✓ 合格</b>答對 ${right}／${total} 題（${pct}%），達到合格標準：答對 ${PASS_PCT}%（${need} 題）。${note}</p>`
+    : `<p class="passbox fail" role="status"><b>✗ 未合格</b>答對 ${right}／${total} 題（${pct}%），合格標準為答對 ${PASS_PCT}%（${need} 題），還差 ${need - right} 題。${note}</p>`;
+}
 function progHtml(p, label = true) {
   const w = p.total ? (p.ok / p.total) * 100 : 0;
-  return `<div class="chprog">${label ? `<span class="small muted">答對 ${p.ok}／${p.total} 題・已練 ${p.done}／${p.total}</span>` : ""}
+  return `<div class="chprog">${label ? `<span class="small muted">答對 ${p.ok}／${p.total} 題・已練 ${p.done}／${p.total}・合格需 ${passNeed(p.total)} 題${isPass(p.ok, p.total) ? `　<span class="chip pass">✓ 已達合格</span>` : ""}</span>` : ""}
     <div class="pbar" role="progressbar" aria-label="答對進度" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.ok}"><i style="width:${w}%"></i></div></div>`;
 }
 
@@ -5174,13 +5194,13 @@ function viewHome() {
           ${s.chapters.map((c, i) => { const d = state.done[c.id]; return `
             <a class="chlink" href="#ch-${c.id}" style="--subj:${s.color}">
               <span class="n">第 ${i + 1} 章</span><span style="min-width:0;flex:1">${esc(c.title)}<br><span class="small muted">記憶卡 ${c.cards.length}・自編題 ${c.quiz.length}</span>${progHtml(chapterProgress(c))}</span>
-              ${d ? `<span class="chip self">練習 ${d.correct}/${d.total}</span>` : ""}
+              ${d ? `<span class="chip ${isPass(d.correct, d.total) ? "pass" : "fail"}">練習 ${d.correct}/${d.total}・${isPass(d.correct, d.total) ? "合格" : "未合格"}</span>` : ""}
               <span class="arrow">›</span></a>`; }).join("")}
         </div>
       </section>`).join("")}
     <section class="card">
       <h2>練習</h2>
-      <p class="small muted">從各章節隨機出題，或集中練習答錯過的題目。</p>
+      <p class="small muted">從各章節隨機出題，或集中練習答錯過的題目。各科練習與模擬測驗皆以<b>答對 70%</b> 為合格。</p>
       <div class="row">
         <a class="btn primary" href="#practice">跨章節隨機練習</a>
         <button class="btn" data-act="startwrong" ${wrongN ? "" : "disabled"}>只練錯題（${wrongN} 題）</button>
@@ -5210,7 +5230,7 @@ function viewChapter(id) {
     }).join("") + `<div class="row"><button class="btn sm" data-act="flipall" data-ch="${ch.id}">全部翻回正面</button></div>`;
   } else {
     body = `<p class="note small">以下為自行編寫的練習題，<b>非歷屆真題</b>。法規題的解析未引用條號，條文待核對。</p>` +
-      `<p class="progress small" id="qsum" aria-live="polite">${quizSummary(ch)}</p>` +
+      `<p class="progress small" id="qsum" aria-live="polite">${quizSummary(ch)}</p><div id="qverdict">${quizVerdict(ch)}</div>` +
       ch.quiz.map((q, i) => quizHtml(ch, q, i)).join("") +
       `<div class="row"><button class="btn sm" data-act="resetquiz" data-ch="${ch.id}">重新作答本章</button></div>`;
   }
@@ -5237,7 +5257,12 @@ function viewChapter(id) {
 function quizSummary(ch) {
   let answered = 0, right = 0;
   ch.quiz.forEach((q, k) => { const c = ui.answers[`${ch.id}:${k}`]; if (c !== undefined) { answered++; if (c === q.a) right++; } });
-  return `已作答 ${answered}／${ch.quiz.length} 題・答對 ${right} 題` + (answered === ch.quiz.length ? `（正確率 ${Math.round((right / answered) * 100)}%）` : "");
+  return `已作答 ${answered}／${ch.quiz.length} 題・答對 ${right} 題` + (answered === ch.quiz.length ? `（正確率 ${Math.round((right / answered) * 100)}%）` : `・合格標準：答對 ${PASS_PCT}%（${passNeed(ch.quiz.length)} 題）`);
+}
+function quizVerdict(ch) {
+  let answered = 0, right = 0;
+  ch.quiz.forEach((q, k) => { const c = ui.answers[`${ch.id}:${k}`]; if (c !== undefined) { answered++; if (c === q.a) right++; } });
+  return answered === ch.quiz.length ? verdictHtml(right, ch.quiz.length) : "";
 }
 
 function permFor(key, n) {
@@ -5317,6 +5342,7 @@ function viewAbout() {
         <li>「練習題」選一個答案後立刻顯示答案與解析；答錯的題目會出現在「錯題」。</li>
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
         <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
+        <li><b>合格標準</b>：章節練習、跨章節練習、只練錯題與整科模擬測驗，皆需<b>答對 70%</b>（以本次總題數計，未作答計為未答對，題數不整除時無條件進位，例如 20 題需答對 14 題、24 題需答對 17 題）才算合格；結果頁會顯示「合格／未合格」與還差幾題。各章進度條在答對題數達 70% 時標示「已達合格」。</li>
         <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
         <li>「統計」頁顯示已練題數、正確率、連續學習天數、近 14 天作答量、各科進度、需要加強的章節與模擬測驗紀錄。</li>
       </ol>
@@ -5403,7 +5429,7 @@ function viewPracticeSetup() {
     </section>
     <section class="card">
       <h2>整科模擬測驗</h2>
-      <p class="small muted">選一個科目，題目平均分配到該科各章；作答中不顯示答案，交卷後才看成績與解析。時間到會自動交卷。</p>
+      <p class="small muted">選一個科目，題目平均分配到該科各章；作答中不顯示答案，交卷後才看成績與解析。時間到會自動交卷。<b>合格標準：答對 70%</b>（未作答計為答錯）。</p>
       <div class="radios" role="radiogroup" aria-label="測驗科目">${SUBJECTS.map((s, i) => `<label><input type="radio" name="ex-subj" value="${s.key}" ${i === 0 ? "checked" : ""}> ${s.name}</label>`).join("")}</div>
       <div class="row">
         <label class="field" for="ex-count">題數
@@ -5417,7 +5443,7 @@ function viewPracticeSetup() {
       </div>
       ${ui.exam && !ui.exam.done ? `<p class="note small">你有一份尚未交卷的測驗（${esc(ui.exam.title)}）。<a href="#exam">繼續作答</a></p>` : ""}
       ${(state.exams || []).length ? `<div class="tablewrap"><table class="mini"><thead><tr><th>時間</th><th>科目</th><th>成績</th><th>用時</th></tr></thead><tbody>
-        ${state.exams.slice(-5).reverse().map((x) => `<tr><td class="num">${fmtDate(x.at)}</td><td>${esc(x.name)}</td><td class="num">${x.score} 分（${x.right}/${x.total}）</td><td class="num">${fmtDur(x.used)}</td></tr>`).join("")}
+        ${state.exams.slice(-5).reverse().map((x) => `<tr><td class="num">${fmtDate(x.at)}</td><td>${esc(x.name)}</td><td class="num">${x.score} 分（${x.right}/${x.total}） ${passChip(x.right, x.total)}</td><td class="num">${fmtDur(x.used)}</td></tr>`).join("")}
       </tbody></table></div>` : ""}
     </section>
     <section class="card">
@@ -5499,6 +5525,7 @@ function viewSessResult() {
         <div class="stat"><b>${st.right}</b><span>答對</span></div>
         <div class="stat"><b>${st.answered ? pct + "%" : "—"}</b><span>正確率</span></div>
       </div>
+      ${verdictHtml(st.right, st.total, st.answered < st.total ? `未作答 ${st.total - st.answered} 題，計為未答對。` : "")}
       ${Object.keys(by).length ? `<div class="row small">${Object.values(by).map((b) => `<span class="chip">${b.name} ${b.r}/${b.t}</span>`).join("")}</div>` : ""}
       <div class="row">
         ${wrongs.length ? `<button class="btn primary" data-act="sretry">重練本次答錯的 ${wrongs.length} 題</button>` : ""}
@@ -5646,6 +5673,7 @@ function viewExamResult() {
         <div class="stat"><b>${x.right}／${x.keys.length}</b><span>答對題數</span></div>
         <div class="stat"><b>${fmtDur(x.used)}</b><span>${x.limitMin ? `用時（限 ${x.limitMin} 分）` : "用時"}</span></div>
       </div>
+      ${verdictHtml(x.right, x.keys.length)}
       <p class="small muted">${x.auto ? "時間到，系統已自動交卷。" : "已交卷。"}${unanswered ? `未作答 ${unanswered} 題，計為答錯（未加入錯題清單）。` : ""}答錯的題目已加入錯題清單。</p>
       <div class="row">
         ${wrongs.length ? `<button class="btn primary" data-act="exretry">重練本次答錯的 ${wrongs.length} 題</button>` : ""}
@@ -5751,13 +5779,13 @@ function viewStats() {
     </section>
 
     <section class="card">
-      <div class="row"><h2>模擬測驗紀錄</h2><span class="spacer"></span>${exams.length ? `<span class="small muted">平均 ${avg} 分・最高 ${best} 分</span>` : ""}</div>
+      <div class="row"><h2>模擬測驗紀錄</h2><span class="spacer"></span>${exams.length ? `<span class="small muted">平均 ${avg} 分・最高 ${best} 分・合格 ${exams.filter((x) => isPass(x.right, x.total)).length}／${exams.length} 次</span>` : ""}</div>
       ${exams.length ? `<div style="display:grid;gap:10px">
         ${exams.slice().reverse().map((x) => `
           <div class="hbar" style="grid-template-columns: 9.5em 1fr auto">
             <span class="small">${fmtDate(x.at)} ${esc(x.name)}</span>
             <div class="track" role="img" aria-label="${x.score} 分"><i style="width:${x.score}%"></i></div>
-            <span class="num">${x.score} 分（${x.right}/${x.total}）</span>
+            <span class="num">${x.score} 分（${x.right}/${x.total}） ${passChip(x.right, x.total)}</span>
           </div>`).join("")}
         </div>` : `<div class="empty">還沒有模擬測驗紀錄。<a href="#practice">到「練習」頁開始整科模擬測驗</a>。</div>`}
     </section>
@@ -5798,6 +5826,7 @@ document.addEventListener("click", (e) => {
     persist();
     const wrap = el.closest(".sec"); const tmp = document.createElement("div"); tmp.innerHTML = quizHtml(ch, q, Number(qi)); wrap.replaceWith(tmp.firstElementChild);
     const sum = document.getElementById("qsum"); if (sum) sum.textContent = quizSummary(ch);
+    const qv = document.getElementById("qverdict"); if (qv) qv.innerHTML = quizVerdict(ch);
     return;
   }
   if (act === "resetquiz") { Object.keys(ui.answers).forEach((k) => { if (k.startsWith(el.dataset.ch + ":")) delete ui.answers[k]; }); viewChapter(el.dataset.ch); return; }
