@@ -197,6 +197,16 @@ table.mini th, table.mini td a { white-space: nowrap; }
 .checks { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 .checks label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
 .field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input { padding: 8px 10px; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); font: inherit; min-width: 0; }
+.plan { border-top: 4px solid var(--accent); }
+.plan .cd { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.plan .cd div { background: var(--sunk); border-radius: 10px; padding: 8px 4px; text-align: center; }
+.plan .cd b { display: block; font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--accent); }
+.plan .cd span { font-size: 12px; color: var(--muted); }
+.plan .pform { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; align-items: end; }
+.remind { padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+.remind.todo { background: var(--pending-soft); }
+.remind.done { background: var(--good-soft); }
 .field select { padding: 8px 10px; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); font: inherit; }
 .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .stat { background: var(--sunk); border-radius: 10px; padding: 8px; text-align: center; }
@@ -6457,13 +6467,16 @@ function progHtml(p, label = true) {
 }
 
 let examTick = null;
+let planTick = null;
 function render() {
   clearInterval(examTick); examTick = null;
+  clearInterval(planTick); planTick = null;
   const h = (location.hash || "#home").slice(1) || "home";
   const base = h.startsWith("ch-") ? "home" : h === "exam" ? "practice" : h;
   document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + base ? "page" : "false"));
   if (h.startsWith("ch-")) return viewChapter(h.slice(3));
   ({ home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAbout }[h] || viewHome)();
+  startPlanTick();
 }
 
 const HOME_KEY = LS_KEY + "-home-subject";
@@ -6482,6 +6495,7 @@ function viewHome() {
       <p class="muted">會計學、貨幣銀行學、票據法、銀行法，另含洗錢防制專章與各科考前重點。先選科目，再選章節：讀重點、翻記憶卡、做自編練習。</p>
       <div class="row small"><span class="chip">收藏 ${savedN}</span><span class="chip">錯題 ${wrongN}</span><span class="chip pending">待核對 = 涉及法規或制度、尚未比對官方原文</span></div>
     </section>
+    ${planHtml()}
     <div class="subjtabs" role="tablist" aria-label="選擇科目">
       ${SUBJECTS.map((x) => { const sp = subjectProgress(x); const on = x.key === homeSubject().key; return `
         <button role="tab" id="tab-${x.key}" aria-selected="${on}" aria-controls="subjpanel" data-act="homesubj" data-v="${x.key}" style="--subj:${x.color}">
@@ -6643,6 +6657,7 @@ function viewAbout() {
         <li>「練習題」選一個答案後立刻顯示答案與解析；答錯的題目會出現在「錯題」。</li>
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
         <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
+        <li><b>考試倒數與複習提醒</b>：首頁科目按鈕上方可輸入考試日期與時間，顯示倒數（天、小時、分），並依尚未答對的題數與剩餘天數算出每日建議題數；可下載行事曆檔，加入手機行事曆後會在考前每天提醒複習，並在考前一天與考前 2 小時提醒。</li>
         <li><b>備份學習紀錄</b>：「統計」頁最下方可匯出學習紀錄備份檔，換手機或清除瀏覽器資料後再匯入還原。</li>
         <li><b>合格標準</b>：章節練習、跨章節練習、只練錯題與整科模擬測驗，皆需<b>答對 70%</b>（以本次總題數計，未作答計為未答對，題數不整除時無條件進位，例如 20 題需答對 14 題、24 題需答對 17 題）才算合格；結果頁會顯示「合格／未合格」與還差幾題。各章進度條在答對題數達 70% 時標示「已達合格」。</li>
         <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
@@ -6999,6 +7014,134 @@ function viewExamResult() {
   window.scrollTo(0, 0);
 }
 
+// ============ 考試日期、倒數與複習提醒 ============
+function getPlan() { return state.plan && state.plan.date ? state.plan : null; }
+function planTarget(pl) { const [y, m, d] = pl.date.split("-").map(Number); const [hh, mm] = (pl.time || "09:00").split(":").map(Number); return new Date(y, m - 1, d, hh, mm, 0); }
+function planLeft(pl) {
+  const ms = planTarget(pl).getTime() - Date.now();
+  if (ms <= 0) return null;
+  const min = Math.floor(ms / 60000);
+  return { d: Math.floor(min / 1440), h: Math.floor((min % 1440) / 60), m: min % 60 };
+}
+function planDaysLeft(pl) {
+  const t = planTarget(pl); const now = new Date();
+  const a = new Date(now.getFullYear(), now.getMonth(), now.getDate()); const b = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return Math.max(0, Math.round((b - a) / 86400000));
+}
+function remainingQuestions() {
+  const att = state.att || {}; let total = 0, ok = 0;
+  CHAPTERS.forEach((c) => c.quiz.forEach((_, i) => { total++; if (att[`${c.id}:${i}`] === 1) ok++; }));
+  return { total, ok, left: total - ok };
+}
+function wkName(d) { return "日一二三四五六"[d.getDay()]; }
+function planHtml() {
+  const pl = getPlan();
+  if (!pl || ui.planEdit) {
+    const v = pl || { date: "", time: "09:00", name: "", remind: "20:00" };
+    return `<section class="card plan" aria-labelledby="plan-h">
+      <h2 id="plan-h">考試日期與倒數</h2>
+      <p class="small muted">輸入考試日期與時間，首頁會顯示倒數，並依剩餘天數提醒每天該複習多少題。</p>
+      <div class="pform">
+        <label class="field">考試日期<input type="date" id="plan-date" value="${esc(v.date)}"></label>
+        <label class="field">考試時間<input type="time" id="plan-time" value="${esc(v.time || "09:00")}"></label>
+        <label class="field">考試名稱（選填）<input type="text" id="plan-name" maxlength="30" placeholder="例如：FIT 考科 II" value="${esc(v.name || "")}"></label>
+        <label class="field">每日複習提醒時間<input type="time" id="plan-remind" value="${esc(v.remind || "20:00")}"></label>
+      </div>
+      <div class="row">
+        <button class="btn primary" data-act="plansave">儲存</button>
+        ${pl ? `<button class="btn" data-act="plancancel">取消</button>` : ""}
+      </div>
+      <p class="small" id="plan-msg" role="status"></p>
+    </section>`;
+  }
+  const t = planTarget(pl);
+  const p2 = (n) => String(n).padStart(2, "0");
+  const when = `${t.getFullYear()}/${p2(t.getMonth() + 1)}/${p2(t.getDate())}（${wkName(t)}）${p2(t.getHours())}:${p2(t.getMinutes())}`;
+  const left = planLeft(pl);
+  const title = esc(pl.name || "考試");
+  if (!left) {
+    return `<section class="card plan" aria-labelledby="plan-h">
+      <div class="row"><h2 id="plan-h">${title}</h2><span class="spacer"></span><span class="small muted">${when}</span></div>
+      <p class="remind done">考試時間已到。祝考試順利！要準備下一場考試，請按「修改」輸入新的日期。</p>
+      <div class="row"><button class="btn sm" data-act="planedit">修改</button><button class="btn sm" data-act="planclear">清除</button></div>
+    </section>`;
+  }
+  const rq = remainingQuestions();
+  const days = Math.max(1, planDaysLeft(pl));
+  const goal = rq.left ? Math.max(5, Math.ceil(rq.left / days)) : 0;
+  const today = (state.daily || {})[dayKey(Date.now())] || { n: 0, ok: 0 };
+  const done = goal ? today.n >= goal : true;
+  const remindPassed = (() => { const [hh, mm] = (pl.remind || "20:00").split(":").map(Number); const n = new Date(); return n.getHours() * 60 + n.getMinutes() >= hh * 60 + mm; })();
+  const msg = !goal ? `全部 ${rq.total} 題都已答對，考前可用「只練錯題」與「考前重點」再複習一次。`
+    : done ? `今天已練 ${today.n} 題，已達成今日目標 ${goal} 題，做得好！`
+    : today.n ? `今天已練 ${today.n} 題，距離今日目標 ${goal} 題還差 ${goal - today.n} 題。`
+    : `今天還沒複習${remindPassed ? `（已過提醒時間 ${esc(pl.remind)}）` : ""}。今日目標：${goal} 題。`;
+  return `<section class="card plan" aria-labelledby="plan-h">
+    <div class="row"><h2 id="plan-h">距離「${title}」還有</h2><span class="spacer"></span><span class="small muted">${when}</span></div>
+    <div class="cd" role="timer" aria-live="off" aria-label="考試倒數 ${left.d} 天 ${left.h} 小時 ${left.m} 分">
+      <div><b id="cd-d">${left.d}</b><span>天</span></div>
+      <div><b id="cd-h">${left.h}</b><span>小時</span></div>
+      <div><b id="cd-m">${left.m}</b><span>分</span></div>
+    </div>
+    <p class="remind ${done ? "done" : "todo"}" role="status">${done ? "✓ " : "⏰ "}${msg}</p>
+    <p class="small muted" style="margin:0">尚未答對 ${rq.left}／${rq.total} 題，依剩餘 ${days} 天平均，建議每天練 ${goal} 題（每日提醒時間 ${esc(pl.remind || "20:00")}）。</p>
+    <div class="row">
+      ${!done ? `<a class="btn primary sm" href="#practice">開始今天的複習</a>` : ""}
+      <button class="btn sm" data-act="planics">加入手機行事曆提醒</button>
+      <button class="btn sm" data-act="planedit">修改</button>
+      <button class="btn sm" data-act="planclear">清除</button>
+    </div>
+    <p class="small" id="plan-msg" role="status"></p>
+  </section>`;
+}
+function startPlanTick() {
+  clearInterval(planTick); planTick = null;
+  const pl = getPlan(); if (!pl || ui.planEdit || !document.getElementById("cd-d")) return;
+  planTick = setInterval(() => {
+    const el = document.getElementById("cd-d"); if (!el) { clearInterval(planTick); planTick = null; return; }
+    const l = planLeft(pl); if (!l) { clearInterval(planTick); planTick = null; render(); return; }
+    el.textContent = l.d; document.getElementById("cd-h").textContent = l.h; document.getElementById("cd-m").textContent = l.m;
+  }, 15000);
+}
+function savePlan() {
+  const g = (id) => (document.getElementById(id) || {}).value || "";
+  const date = g("plan-date"), time = g("plan-time") || "09:00", name = g("plan-name").trim().slice(0, 30), remind = g("plan-remind") || "20:00";
+  const msg = document.getElementById("plan-msg");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { if (msg) msg.textContent = "請輸入考試日期。"; return; }
+  const pl = { date, time, name, remind };
+  if (planTarget(pl).getTime() <= Date.now()) { if (msg) msg.textContent = "考試時間必須在現在之後。"; return; }
+  state.plan = pl; ui.planEdit = false; persist(); render();
+}
+function icsStamp(d) { const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`; }
+function planIcs() {
+  const msg = document.getElementById("plan-msg");
+  const pl = getPlan(); if (!pl) return;
+  if (window.claude) { if (msg) msg.textContent = "此版本無法下載檔案，請用手機版網址（vicky-sucoot.github.io/test-item）加入行事曆提醒。"; return; }
+  const t = planTarget(pl); const now = new Date();
+  const [rh, rm] = (pl.remind || "20:00").split(":").map(Number);
+  let first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), rh, rm, 0);
+  if (first <= now) first = new Date(first.getTime() + 86400000);
+  const lastDay = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1, rh, rm, 0);
+  const z = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const name = (pl.name || "考試").replace(/[,;\\\n]/g, " ");
+  const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//FIT Review//ZH-TW", "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT", `UID:fit-exam-${pl.date}@fit-review`, `DTSTAMP:${z(now)}`, `DTSTART:${icsStamp(t)}`, "DURATION:PT2H", `SUMMARY:${name}`,
+    "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:明天就是${name}`, "TRIGGER:-P1D", "END:VALARM",
+    "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${name}即將開始`, "TRIGGER:-PT2H", "END:VALARM", "END:VEVENT"];
+  if (first <= lastDay) {
+    L.push("BEGIN:VEVENT", `UID:fit-review-${pl.date}@fit-review`, `DTSTAMP:${z(now)}`, `DTSTART:${icsStamp(first)}`, "DURATION:PT30M",
+      `RRULE:FREQ=DAILY;UNTIL=${icsStamp(lastDay)}`, `SUMMARY:FIT重點複習：今天的複習（${name}倒數）`,
+      "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:該複習了！打開 FIT重點複習完成今日目標", "TRIGGER:PT0M", "END:VALARM", "END:VEVENT");
+  }
+  L.push("END:VCALENDAR");
+  try {
+    const blob = new Blob([L.join("\r\n") + "\r\n"], { type: "text/calendar" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `FIT-exam-${pl.date}.ics`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    if (msg) msg.textContent = "已產生行事曆檔，開啟後加入手機行事曆：考前一天與考前 2 小時提醒，並在考前每天 " + (pl.remind || "20:00") + " 提醒複習。";
+  } catch (e) { if (msg) msg.textContent = "這個環境無法下載檔案。"; }
+}
+
 // ============ 學習統計 ============
 function dayKey(t) { const d = new Date(t); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
 function lastDays(n) { const out = []; const now = new Date(); for (let i = n - 1; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); out.push(dayKey(d.getTime())); } return out; }
@@ -7113,6 +7256,11 @@ document.addEventListener("click", (e) => {
   if (act === "theme") { const cur = getThemePref(); const next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length]; setThemePref(next); return; }
   if (act === "themeset") { setThemePref(el.dataset.v); return; }
   if (act === "export") { exportState(); return; }
+  if (act === "plansave") { savePlan(); return; }
+  if (act === "planedit") { ui.planEdit = true; render(); return; }
+  if (act === "plancancel") { ui.planEdit = false; render(); return; }
+  if (act === "planclear") { if (confirm("確定要清除考試日期嗎？")) { delete state.plan; ui.planEdit = false; persist(); render(); } return; }
+  if (act === "planics") { planIcs(); return; }
   if (act === "homesubj") { setHomeSubject(el.dataset.v); viewHome(); const t = document.getElementById("tab-" + el.dataset.v); if (t) t.focus(); return; }
   if (act === "tab") { ui.tab = el.dataset.v; viewChapter(h.slice(3)); return; }
   if (act === "save") {
