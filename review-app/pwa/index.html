@@ -226,7 +226,7 @@ table.mini th, table.mini td a { white-space: nowrap; }
 // ============ 資料來源（只放已找到的官方頁面；條文內容一律「待核對」） ============
 const SRC = {
   bills: { name: "全國法規資料庫：票據法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380028" },
-  bank: { name: "全國法規資料庫（請以法規名稱「銀行法」查詢）", url: "https://law.moj.gov.tw/" },
+  bank: { name: "全國法規資料庫：銀行法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380001" },
   cbc: { name: "中央銀行全球資訊網", url: "https://www.cbc.gov.tw/" },
   ias2: { name: "IFRS 基金會：IAS 2 存貨", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-2-inventories/" },
   ias7: { name: "IFRS 基金會：IAS 7 現金流量表", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-7-statement-of-cash-flows/" },
@@ -512,7 +512,7 @@ Object.assign(SRC, {
   bis: { name: "國際清算銀行（BIS）：Basel III", url: "https://www.bis.org/bcbs/basel3.htm" },
   fsc: { name: "金融監督管理委員會", url: "https://www.fsc.gov.tw/" },
   cdic: { name: "中央存款保險公司", url: "https://www.cdic.gov.tw/" },
-  depins: { name: "全國法規資料庫（請以法規名稱「存款保險條例」查詢）", url: "https://law.moj.gov.tw/" },
+  depins: { name: "全國法規資料庫：存款保險條例", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380039" },
 });
 const MORE = {
 acc: [
@@ -1114,7 +1114,7 @@ SUBJECTS.forEach((s) => s.chapters.forEach((c) => {
 
 // ============ 第四批：新章節（10 卡 20 題）＋各科第 1、2 章補足至 10 卡 20 題 ============
 Object.assign(SRC, {
-  trust: { name: "全國法規資料庫（請以法規名稱「信託業法」查詢）", url: "https://law.moj.gov.tw/" },
+  trust: { name: "全國法規資料庫：信託業法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0310027" },
 });
 const MORE4 = {
 acc: [{
@@ -2316,8 +2316,8 @@ Object.assign(SRC, {
   ias38: { name: "IFRS 基金會：IAS 38 無形資產", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-38-intangible-assets/" },
   ias36: { name: "IFRS 基金會：IAS 36 資產減損", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-36-impairment-of-assets/" },
   ifrs: { name: "IFRS 基金會（觀念架構請於網站查詢）", url: "https://www.ifrs.org/" },
-  cbclaw: { name: "全國法規資料庫（請以法規名稱「中央銀行法」查詢）", url: "https://law.moj.gov.tw/" },
-  aml: { name: "全國法規資料庫（請以法規名稱「洗錢防制法」查詢）", url: "https://law.moj.gov.tw/" },
+  cbclaw: { name: "全國法規資料庫：中央銀行法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0410001" },
+  aml: { name: "全國法規資料庫：洗錢防制法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380131" },
   mjib: { name: "法務部調查局", url: "https://www.mjib.gov.tw/" },
 });
 const MORE7 = {
@@ -2995,8 +2995,8 @@ SUBJECTS.forEach((s) => s.chapters.push(...MORE7[s.key]));
 Object.assign(SRC, {
   ifrs16: { name: "IFRS 基金會：IFRS 16 租賃", url: "https://www.ifrs.org/issued-standards/list-of-standards/ifrs-16-leases/" },
   ias8: { name: "IFRS 基金會：IAS 8 會計政策、會計估計值變動及錯誤", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-8-accounting-policies-changes-in-accounting-estimates-and-errors/" },
-  pdpa: { name: "全國法規資料庫（請以法規名稱「個人資料保護法」查詢）", url: "https://law.moj.gov.tw/" },
-  fcpa: { name: "全國法規資料庫（請以法規名稱「金融消費者保護法」查詢）", url: "https://law.moj.gov.tw/" },
+  pdpa: { name: "全國法規資料庫：個人資料保護法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=I0050021" },
+  fcpa: { name: "全國法規資料庫：金融消費者保護法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380226" },
   foi: { name: "財團法人金融消費評議中心", url: "https://www.foi.org.tw/" },
 });
 const MORE8 = {
@@ -3676,9 +3676,9 @@ Object.assign(SRC, {
   ias12: { name: "IFRS 基金會：IAS 12 所得稅", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-12-income-taxes/" },
   ias16: { name: "IFRS 基金會：IAS 16 不動產、廠房及設備", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-16-property-plant-and-equipment/" },
   ias33: { name: "IFRS 基金會：IAS 33 每股盈餘", url: "https://www.ifrs.org/issued-standards/list-of-standards/ias-33-earnings-per-share/" },
-  epay: { name: "全國法規資料庫（請以法規名稱「電子支付機構管理條例」查詢）", url: "https://law.moj.gov.tw/" },
-  sandbox: { name: "全國法規資料庫（請以法規名稱「金融科技發展與創新實驗條例」查詢）", url: "https://law.moj.gov.tw/" },
-  icrule: { name: "全國法規資料庫（請以「金融控股公司及銀行業內部控制及稽核制度實施辦法」查詢）", url: "https://law.moj.gov.tw/" },
+  epay: { name: "全國法規資料庫：電子支付機構管理條例", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380237" },
+  sandbox: { name: "全國法規資料庫：金融科技發展與創新實驗條例", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380254" },
+  icrule: { name: "全國法規資料庫：金融控股公司及銀行業內部控制及稽核制度實施辦法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380218" },
 });
 const MORE9 = {
 acc: [
@@ -4354,7 +4354,7 @@ SUBJECTS.forEach((s) => s.chapters.push(...(MORE9[s.key] || [])));
 
 // ============ 第五科：洗錢防制（獨立章節） ============
 Object.assign(SRC, {
-  cft: { name: "全國法規資料庫（請以法規名稱「資恐防制法」查詢）", url: "https://law.moj.gov.tw/" },
+  cft: { name: "全國法規資料庫：資恐防制法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=I0030047" },
   amlo: { name: "行政院洗錢防制辦公室", url: "https://www.amlo.moj.gov.tw/" },
   customs: { name: "財政部關務署", url: "https://web.customs.gov.tw/" },
 });
@@ -4589,7 +4589,7 @@ SUBJECTS.push({
 const CHAPTERS = new Map();
 // ============ 洗錢防制第 5–8 章 ============
 Object.assign(SRC, {
-  alert: { name: "全國法規資料庫（請以「存款帳戶及其疑似不法或顯屬異常交易管理辦法」查詢）", url: "https://law.moj.gov.tw/" },
+  alert: { name: "全國法規資料庫：存款帳戶及其疑似不法或顯屬異常交易管理辦法", url: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=G0380199" },
   fatf: { name: "FATF（防制洗錢金融行動工作組織）", url: "https://www.fatf-gafi.org/" },
 });
 SUBJECTS.find((s) => s.key === "aml").chapters.push(
