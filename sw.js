@@ -1,6 +1,6 @@
 // FIT重點複習：離線快取
 // 頁面採「網路優先、失敗時用快取」，連網時總是拿到最新版；離線時使用上次快取的版本。
-const CACHE = "review-app-a672c7f412d5";
+const CACHE = "review-app-caa4d07e7bfb";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png", "./icons/apple-touch-icon.png"];
 const FONT_CACHE = "review-app-fonts";
 
