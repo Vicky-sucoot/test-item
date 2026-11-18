@@ -101,6 +101,12 @@ p { margin: 0; }
 .chip.self { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .chip.pass { background: var(--good-soft); color: var(--good); border-color: transparent; font-weight: 700; }
 .chip.fail { background: var(--bad-soft); color: var(--bad); border-color: transparent; font-weight: 700; }
+.aboutbox summary { cursor: pointer; list-style: none; display: grid; gap: 2px; }
+.aboutbox summary::-webkit-details-marker { display: none; }
+.aboutbox summary h2::after { content: " ▾"; color: var(--muted); font-size: 0.8em; }
+.aboutbox[open] summary h2::after { content: " ▴"; }
+.aboutin { display: grid; gap: 12px; }
+.aboutin .card { border: 0; padding: 12px 0 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
 .passbox { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; color: var(--fg); }
 .passbox.pass { background: var(--good-soft); }
 .passbox.fail { background: var(--bad-soft); }
@@ -219,6 +225,13 @@ table.mini th, table.mini td a { white-space: nowrap; }
 .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
 .stat span { font-size: 12px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .face { transition: none; } }
+.aboutbox { scroll-margin-top: 120px; }
+@media (max-width: 560px) {
+  header.top .wrap { flex-wrap: wrap; row-gap: 6px; }
+  nav.tabs { order: 3; width: 100%; margin-left: 0; justify-content: space-between; }
+  .themebtn { margin-left: auto; }
+}
+@media (max-width: 380px) { nav.tabs a { padding: 6px 7px; } }
 </style>
 
 <header class="top">
@@ -231,7 +244,6 @@ table.mini th, table.mini td a { white-space: nowrap; }
       <a href="#saved">收藏</a>
       <a href="#wrong">錯題</a>
       <a href="#stats">統計</a>
-      <a href="#about">說明</a>
     </nav>
     <button class="themebtn" id="themeBtn" type="button" data-act="theme" aria-label="顯示模式：跟隨系統（點擊切換）" title="顯示模式：跟隨系統"><span aria-hidden="true">◐</span></button>
   </div>
@@ -6479,10 +6491,10 @@ function render() {
   clearInterval(examTick); examTick = null;
   clearInterval(planTick); planTick = null;
   const h = (location.hash || "#plan").slice(1) || "plan";
-  const base = h.startsWith("ch-") ? "home" : h === "exam" ? "practice" : h;
+  const base = h.startsWith("ch-") ? "home" : h === "exam" ? "practice" : h === "about" ? "stats" : h;
   document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + base ? "page" : "false"));
   if (h.startsWith("ch-")) return viewChapter(h.slice(3));
-  ({ plan: viewPlan, home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAbout }[h] || viewHome)();
+  ({ plan: viewPlan, home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAboutRedirect }[h] || viewHome)();
   startPlanTick();
 }
 
@@ -6651,10 +6663,9 @@ function viewWrong() {
   window.scrollTo(0, 0);
 }
 
-function viewAbout() {
+function aboutHtml() {
   const pending = [...CHAPTERS.values()].reduce((n, c) => n + SECTIONS.reduce((m, [k]) => m + c[k].filter((p) => p.reg && !p.checked).length, 0), 0);
-  $app.innerHTML = `
-    <h1>使用說明</h1>
+  return `
     <section class="card">
       <h2>怎麼用</h2>
       <ol style="margin:0;padding-left:20px;display:grid;gap:4px">
@@ -6665,7 +6676,7 @@ function viewAbout() {
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
         <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
         <li><b>考試倒數與複習提醒</b>：第一頁「倒數」可輸入考試日期與時間（可新增多天），顯示倒數（天、小時、分），並依尚未答對的題數與剩餘天數算出每日建議題數；可下載行事曆檔，加入手機行事曆後會在考前每天提醒複習，並在考前一天與考前 2 小時提醒。</li>
-        <li><b>備份學習紀錄</b>：「統計」頁最下方可匯出學習紀錄備份檔，換手機或清除瀏覽器資料後再匯入還原。</li>
+        <li><b>備份學習紀錄</b>：「統計」頁下方可匯出學習紀錄備份檔，換手機或清除瀏覽器資料後再匯入還原。</li>
         <li><b>合格標準</b>：章節練習、跨章節練習、只練錯題與整科模擬測驗，皆需<b>答對 70%</b>（以本次總題數計，未作答計為未答對，題數不整除時無條件進位，例如 20 題需答對 14 題、24 題需答對 17 題）才算合格；結果頁會顯示「合格／未合格」與還差幾題。各章進度條在答對題數達 70% 時標示「已達合格」。</li>
         <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
         <li>「統計」頁顯示已練題數、正確率、連續學習天數、近 14 天作答量、各科進度、需要加強的章節與模擬測驗紀錄。</li>
@@ -6675,7 +6686,7 @@ function viewAbout() {
       <h2>內容與來源</h2>
       <p>所有重點都是自行整理，練習題都是自行編寫，<b>不是歷屆真題</b>。</p>
       <p>涉及現行法規或制度的重點，會附上官方來源連結。目前共有 <b>${pending}</b> 則標示「待核對」：已附上全國法規資料庫或中央銀行網站的連結，但還沒有逐條比對官方原文，所以核對日期留空，也沒有寫出條號。</p>
-      <p class="small muted">銀行法的連結目前指向全國法規資料庫首頁，請以法規名稱「銀行法」查詢；票據法連結直接指向該法全文。</p>
+      <p class="small muted">法規來源連結直接指向全國法規資料庫的該法規頁面；條文內容仍請以官方原文為準。</p>
     </section>
     <section class="card">
       <h2>顯示模式</h2>
@@ -6699,8 +6710,8 @@ function viewAbout() {
       <div><button class="btn sm" data-act="clear">清除收藏與錯題</button></div>
       <div id="clearConfirm" hidden class="note"><p>確定清除所有收藏、錯題與練習紀錄？</p><div class="row" style="margin-top:6px"><button class="btn sm" data-act="clearyes">確定清除</button><button class="btn sm" data-act="clearno">取消</button></div></div>
     </section>`;
-  window.scrollTo(0, 0);
 }
+function viewAboutRedirect() { ui.openAbout = true; location.replace("#stats"); }
 
 // ============ 跨章節練習與只練錯題 ============
 const SESS_KEY = LS_KEY + "-session";
@@ -7304,7 +7315,12 @@ function viewStats() {
       </div>
       <p class="small" id="bkmsg" role="status"></p>
     </section>
+    <details class="card aboutbox" id="about"${ui.openAbout ? " open" : ""}>
+      <summary><h2>使用說明與設定</h2><span class="small muted">怎麼用、內容與來源、顯示模式、安裝到手機、清除紀錄</span></summary>
+      <div class="aboutin">${aboutHtml()}</div>
+    </details>
     <p class="syncnote" data-sync>${syncText()}</p>`;
+  if (ui.openAbout) { ui.openAbout = false; const d = document.getElementById("about"); if (d) { d.scrollIntoView(); return; } }
   window.scrollTo(0, 0);
 }
 
@@ -7404,7 +7420,7 @@ document.addEventListener("click", (e) => {
   if (act === "install") { if (window.__installPrompt) { window.__installPrompt.prompt(); window.__installPrompt = null; const r = document.getElementById("installRow"); if (r) r.hidden = true; } return; }
   if (act === "clear") { document.getElementById("clearConfirm").hidden = false; return; }
   if (act === "clearno") { document.getElementById("clearConfirm").hidden = true; return; }
-  if (act === "clearyes") { state = empty(); ui.answers = {}; ui.sess = null; ui.exam = null; saveSess(); saveExam(); persist(); viewAbout(); return; }
+  if (act === "clearyes") { state = empty(); ui.answers = {}; ui.sess = null; ui.exam = null; saveSess(); saveExam(); persist(); ui.openAbout = true; viewStats(); return; }
 });
 window.addEventListener("hashchange", () => {
   const h = (location.hash || "").slice(1);
