@@ -827,7 +827,7 @@ mb: [{
   ],
   quiz: [
     Q("凱因斯的流動性偏好理論認為，利率由下列何者決定？", ["可貸資金供需", "貨幣供給與貨幣需求", "儲蓄與投資", "政府支出"], 1, "流動性偏好理論以貨幣市場的供需決定利率。"),
-    Q("下列哪一種貨幣需求與利率呈反向關係？", ["交易動機", "預防動機", "投機動機", "以上皆是"], 2, "利率越高，持有貨幣的機會成本越高，投機性貨幣需求越少。"),
+    Q("下列哪一種貨幣需求與利率呈反向關係？", ["交易動機", "預防動機", "投機動機", "儲蓄動機"], 2, "利率越高，持有貨幣的機會成本越高，投機性貨幣需求越少。"),
     Q("經濟處於流動性陷阱時，下列何種政策效果最有限？", ["擴張性貨幣政策", "擴張性財政政策", "減稅", "增加政府支出"], 0, "利率已無法再下降，增加貨幣供給難以刺激投資。"),
     Q("目前 1 年期利率 3%，預期明年 1 年期利率 5%，依純粹預期理論，2 年期利率約為多少？", ["3%", "4%", "5%", "8%"], 1, "（3% + 5%）÷ 2 = 4%。"),
     Q("認為不同期限的債券完全不能互相替代的是哪一種理論？", ["純粹預期理論", "市場區隔理論", "流動性貼水理論", "可貸資金理論"], 1, "市場區隔理論認為各期限債券市場彼此獨立。"),
@@ -1379,7 +1379,7 @@ const EXTRA4 = {
     ["抗辯限制的例外？", "執票人惡意取得"], ["本票有沒有承兌？", "沒有"]], quiz: [
     Q("票據權利的內容依票面記載決定，稱為票據的：", ["文義性", "要式性", "無因性", "流通性"], 0, "文義性：依票上記載的文義負責。"),
     Q("買賣契約被解除，但票據已轉讓給善意第三人，第三人的票據權利原則上：", ["一併消滅", "不受影響", "減半", "須經法院確認"], 1, "依無因性及抗辯限制，善意執票人原則上不受影響。" + L),
-    Q("由發票人自己付款的票據是：", ["匯票", "本票", "支票", "以上皆是"], 1, "本票由發票人自己付款。" + L),
+    Q("由發票人自己付款的票據是：", ["匯票", "本票", "支票", "公債"], 1, "本票由發票人自己付款。" + L),
     Q("委託金融業者於見票時無條件支付的票據是：", ["匯票", "本票", "支票", "倉單"], 2, "支票的付款人是金融業者。" + L),
     Q("匯票經承兌後，付款人成為：", ["主債務人", "保證人", "背書人", "受款人"], 0, "承兌後付款人負付款責任。" + L),
     Q("執票人明知債務人對其前手有抗辯事由而取得票據，債務人可否以該事由對抗執票人？", ["不可以", "可以", "須經法院許可", "只能對抗一半金額"], 1, "惡意取得是抗辯限制的例外。" + L),
@@ -3403,7 +3403,7 @@ ni: [
     Q("以惡意或重大過失取得票據者，其權利為：", ["不得享有票據上的權利", "享有全部權利", "享有一半權利", "優於前手"], 0, "惡意或重大過失取得者不得享有票據權利。" + L),
     Q("無對價取得票據者，其權利為：", ["不得享有任何權利", "不得享有優於前手的權利", "優於前手", "需經法院確認"], 1, "不得優於前手。" + L),
     Q("下列何者屬於票據權利的原始取得？", ["善意取得", "背書轉讓", "繼承", "交付轉讓"], 0, "善意取得屬原始取得。" + L),
-    Q("下列何者屬於票據權利的繼受取得？", ["背書轉讓", "發票", "善意取得", "以上皆非"], 0, "背書轉讓屬繼受取得。" + L),
+    Q("下列何者屬於票據權利的繼受取得？", ["背書轉讓", "發票", "善意取得", "票據喪失"], 0, "背書轉讓屬繼受取得。" + L),
     Q("善意取得的要件之一為：", ["善意且無重大過失", "必須是親屬", "必須支付兩倍對價", "必須經法院公證"], 0, "善意且無重大過失。" + L),
     Q("受贈取得票據，能否享有票據權利？", ["能，但不得優於前手", "完全不能", "能且優於前手", "須經發票人同意"], 0, "無對價取得不得優於前手。" + L),
     Q("丙明知乙以詐術取得本票仍受讓，丙的權利為：", ["不得享有票據權利", "享有完整權利", "優於乙", "可對抗發票人所有抗辯"], 0, "惡意取得。" + L),
@@ -4150,8 +4150,8 @@ ni: [
     Q("執票人對支票發票人的時效為：", ["1 年", "3 年", "4 個月", "6 個月"], 0, "自發票日起 1 年。" + L),
     Q("執票人對本票發票人的時效為：", ["3 年", "1 年", "6 個月", "2 個月"], 0, "自到期日起 3 年。" + L),
     Q("參加承兌制度存在於：", ["匯票", "支票", "本票", "三者皆有"], 0, "只有匯票。" + L),
-    Q("付款人以金融業者為限的票據是：", ["支票", "匯票", "本票", "三者皆是"], 0, "支票。" + L),
-    Q("由發票人自己付款的票據是：", ["本票", "匯票", "支票", "三者皆是"], 0, "本票是自付證券。" + L),
+    Q("付款人以金融業者為限的票據是：", ["支票", "匯票", "本票", "匯票與本票皆是"], 0, "支票。" + L),
+    Q("由發票人自己付款的票據是：", ["本票", "匯票", "支票", "匯票與支票皆是"], 0, "本票是自付證券。" + L),
     Q("匯票與本票可以採用的到期方式有幾種？", ["四種", "一種", "兩種", "三種"], 0, "定日、發票日後定期、見票即付、見票後定期。" + L),
     Q("下列組合何者正確？", ["匯票：承兌、複本；本票：謄本；支票：平行線、保付", "支票：承兌", "本票：複本", "匯票：平行線"], 0, "依各票據特有制度。" + L),
     Q("下列何者是追索權？", ["三種票據都有的制度", "只有匯票有", "只有本票有", "只有支票有"], 0, "三者皆有追索權。" + L),
@@ -6232,6 +6232,32 @@ async function initCloud() {
     cloud.status = "synced"; showSync();
   } catch (e) { cloud.status = "error"; showSync(); }
 }
+function exportState() {
+  const msg = document.getElementById("bkmsg");
+  try {
+    const d = new Date(); const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const blob = new Blob([JSON.stringify({ app: "fit-review", exportedAt: d.toISOString(), state }, null, 1)], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `FIT-review-backup-${ymd}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    if (msg) msg.textContent = "已產生備份檔，請存到安全的位置。";
+  } catch (e) { if (msg) msg.textContent = "這個環境無法下載檔案，請改用手機版網址操作。"; }
+}
+function importState(file) {
+  const msg = document.getElementById("bkmsg");
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const o = JSON.parse(r.result); const s = o && o.state ? o.state : o;
+      if (!s || s.v !== 1 || typeof s.att !== "object") throw new Error("bad");
+      if (!confirm("匯入會取代目前的學習紀錄，確定要匯入嗎？")) { if (msg) msg.textContent = "已取消匯入。"; return; }
+      state = Object.assign(empty(), s); persist(); render();
+      const m2 = document.getElementById("bkmsg"); if (m2) m2.textContent = "已匯入學習紀錄。";
+    } catch (e) { if (msg) msg.textContent = "檔案格式不正確，請選擇本 App 匯出的備份檔。"; }
+  };
+  r.onerror = () => { if (msg) msg.textContent = "讀取檔案失敗。"; };
+  r.readAsText(file);
+}
+document.addEventListener("change", (e) => { if (e.target && e.target.id === "importfile" && e.target.files && e.target.files[0]) { importState(e.target.files[0]); e.target.value = ""; } });
 function syncText() {
   return {
     local: "收藏與錯題保存在這個瀏覽器；清除瀏覽器資料或換裝置後不會保留。",
@@ -6476,6 +6502,7 @@ function viewAbout() {
         <li>「練習題」選一個答案後立刻顯示答案與解析；答錯的題目會出現在「錯題」。</li>
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
         <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
+        <li><b>備份學習紀錄</b>：「統計」頁最下方可匯出學習紀錄備份檔，換手機或清除瀏覽器資料後再匯入還原。</li>
         <li><b>合格標準</b>：章節練習、跨章節練習、只練錯題與整科模擬測驗，皆需<b>答對 70%</b>（以本次總題數計，未作答計為未答對，題數不整除時無條件進位，例如 20 題需答對 14 題、24 題需答對 17 題）才算合格；結果頁會顯示「合格／未合格」與還差幾題。各章進度條在答對題數達 70% 時標示「已達合格」。</li>
         <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
         <li>「統計」頁顯示已練題數、正確率、連續學習天數、近 14 天作答量、各科進度、需要加強的章節與模擬測驗紀錄。</li>
@@ -6923,6 +6950,16 @@ function viewStats() {
           </div>`).join("")}
         </div>` : `<div class="empty">還沒有模擬測驗紀錄。<a href="#practice">到「練習」頁開始整科模擬測驗</a>。</div>`}
     </section>
+    <section class="card">
+      <h2>備份與還原學習紀錄</h2>
+      <p class="small muted">學習紀錄（收藏、錯題、進度、模擬測驗成績）存在這個瀏覽器。換手機或清除瀏覽器資料前，請先匯出備份檔；到新裝置後按「匯入」還原。匯入會取代目前的紀錄。</p>
+      <div class="row">
+        <button class="btn" data-act="export">匯出學習紀錄</button>
+        <label class="btn" for="importfile">匯入學習紀錄</label>
+        <input type="file" id="importfile" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0">
+      </div>
+      <p class="small" id="bkmsg" role="status"></p>
+    </section>
     <p class="syncnote" data-sync>${syncText()}</p>`;
   window.scrollTo(0, 0);
 }
@@ -6934,6 +6971,7 @@ document.addEventListener("click", (e) => {
   const h = (location.hash || "").slice(1);
   if (act === "theme") { const cur = getThemePref(); const next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length]; setThemePref(next); return; }
   if (act === "themeset") { setThemePref(el.dataset.v); return; }
+  if (act === "export") { exportState(); return; }
   if (act === "homesubj") { setHomeSubject(el.dataset.v); viewHome(); const t = document.getElementById("tab-" + el.dataset.v); if (t) t.focus(); return; }
   if (act === "tab") { ui.tab = el.dataset.v; viewChapter(h.slice(3)); return; }
   if (act === "save") {
