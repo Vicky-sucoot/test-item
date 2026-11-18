@@ -6257,6 +6257,7 @@ async function initCloud() {
 }
 function exportState() {
   const msg = document.getElementById("bkmsg");
+  if (window.claude) { if (msg) msg.textContent = "此版本登入 claude.ai 時，學習紀錄已自動同步到你的帳號；要匯出備份檔，請用手機版網址（vicky-sucoot.github.io/test-item）。"; return; }
   try {
     const d = new Date(); const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const blob = new Blob([JSON.stringify({ app: "fit-review", exportedAt: d.toISOString(), state }, null, 1)], { type: "application/json" });
