@@ -200,8 +200,9 @@ table.mini th, table.mini td a { white-space: nowrap; }
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#home">FIT重點複習</a>
+    <a class="brand" href="#plan">FIT重點複習</a>
     <nav class="tabs" id="tabs" aria-label="主要頁面">
+      <a href="#plan">倒數</a>
       <a href="#home">科目</a>
       <a href="#practice">練習</a>
       <a href="#saved">收藏</a>
@@ -6454,11 +6455,11 @@ let planTick = null;
 function render() {
   clearInterval(examTick); examTick = null;
   clearInterval(planTick); planTick = null;
-  const h = (location.hash || "#home").slice(1) || "home";
+  const h = (location.hash || "#plan").slice(1) || "plan";
   const base = h.startsWith("ch-") ? "home" : h === "exam" ? "practice" : h;
   document.querySelectorAll("#tabs a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + base ? "page" : "false"));
   if (h.startsWith("ch-")) return viewChapter(h.slice(3));
-  ({ home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAbout }[h] || viewHome)();
+  ({ plan: viewPlan, home: viewHome, practice: viewPractice, exam: viewExam, saved: viewSaved, wrong: viewWrong, stats: viewStats, about: viewAbout }[h] || viewHome)();
   startPlanTick();
 }
 
@@ -6478,7 +6479,7 @@ function viewHome() {
       <p class="muted">會計學、貨幣銀行學、票據法、銀行法，另含洗錢防制專章與各科考前重點。先選科目，再選章節：讀重點、翻記憶卡、做自編練習。</p>
       <div class="row small"><span class="chip">收藏 ${savedN}</span><span class="chip">錯題 ${wrongN}</span><span class="chip pending">待核對 = 涉及法規或制度、尚未比對官方原文</span></div>
     </section>
-    ${planHtml()}
+    ${planLinkHtml()}
     <div class="subjtabs" role="tablist" aria-label="選擇科目">
       ${SUBJECTS.map((x) => { const sp = subjectProgress(x); const on = x.key === homeSubject().key; return `
         <button role="tab" id="tab-${x.key}" aria-selected="${on}" aria-controls="subjpanel" data-act="homesubj" data-v="${x.key}" style="--subj:${x.color}">
@@ -6640,7 +6641,7 @@ function viewAbout() {
         <li>「練習題」選一個答案後立刻顯示答案與解析；答錯的題目會出現在「錯題」。</li>
         <li>「練習」頁可選科目與題數，跨章節隨機出題；也可以「只練錯題」，答對的題目會自動從錯題清單移除。</li>
         <li>「整科模擬測驗」：選科目、題數與時間，題目平均分配到各章；交卷後顯示成績、各章正確率與解析。</li>
-        <li><b>考試倒數與複習提醒</b>：首頁科目按鈕上方可輸入考試日期與時間，顯示倒數（天、小時、分），並依尚未答對的題數與剩餘天數算出每日建議題數；可下載行事曆檔，加入手機行事曆後會在考前每天提醒複習，並在考前一天與考前 2 小時提醒。</li>
+        <li><b>考試倒數與複習提醒</b>：第一頁「倒數」可輸入考試日期與時間（可新增多天），顯示倒數（天、小時、分），並依尚未答對的題數與剩餘天數算出每日建議題數；可下載行事曆檔，加入手機行事曆後會在考前每天提醒複習，並在考前一天與考前 2 小時提醒。</li>
         <li><b>備份學習紀錄</b>：「統計」頁最下方可匯出學習紀錄備份檔，換手機或清除瀏覽器資料後再匯入還原。</li>
         <li><b>合格標準</b>：章節練習、跨章節練習、只練錯題與整科模擬測驗，皆需<b>答對 70%</b>（以本次總題數計，未作答計為未答對，題數不整除時無條件進位，例如 20 題需答對 14 題、24 題需答對 17 題）才算合格；結果頁會顯示「合格／未合格」與還差幾題。各章進度條在答對題數達 70% 時標示「已達合格」。</li>
         <li>各章進度條顯示「答對過的題數」：每題以最近一次作答結果計算。</li>
@@ -7097,6 +7098,25 @@ function planHtml() {
     </div>
     <p class="small" id="plan-msg" role="status"></p>
   </section>`;
+}
+function viewPlan() {
+  $app.innerHTML = `
+    <section style="display:grid;gap:6px">
+      <h1>考試倒數</h1>
+      <p class="muted">設定考試日期與時間，掌握剩餘天數與每天該複習的題數。</p>
+    </section>
+    ${planHtml()}
+    <div class="row"><a class="btn" href="#home">到科目列表讀重點</a><a class="btn" href="#practice">到練習頁出題</a></div>
+    <p class="syncnote" data-sync>${syncText()}</p>`;
+  window.scrollTo(0, 0);
+}
+function planLinkHtml() {
+  const pl = getPlan();
+  if (!pl) return `<a class="chlink" href="#plan"><span style="flex:1">⏰ 設定考試日期與倒數</span><span class="arrow">›</span></a>`;
+  const i = pl.sessions.findIndex((x) => leftOf(x));
+  if (i < 0) return `<a class="chlink" href="#plan"><span style="flex:1">考試都已結束，可到「倒數」頁設定新的考試日期</span><span class="arrow">›</span></a>`;
+  const nx = pl.sessions[i]; const l = leftOf(nx);
+  return `<a class="chlink" href="#plan"><span style="flex:1">⏰ 距離「${esc(sessName(nx, i))}」還有 <b>${l.d}</b> 天 ${l.h} 小時</span><span class="arrow">›</span></a>`;
 }
 function startPlanTick() {
   clearInterval(planTick); planTick = null;
